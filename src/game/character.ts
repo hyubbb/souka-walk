@@ -10,7 +10,12 @@ export const EXPR = [
 ];
 export const MOUTHS = [{ key: 'line', label: '일자' }, { key: 'cat', label: ':3' }, { key: 'o', label: 'o' }];
 export const ACC = [{ key: 'blush', label: '볼터치' }, { key: 'hat', label: '털모자' }, { key: 'phones', label: '헤드폰' }] as const;
-export const POSES: { key: Pose; label: string }[] = [{ key: 'stand', label: '서기' }, { key: 'think', label: '생각' }, { key: 'sit', label: '앉기' }, { key: 'lie', label: '눕기' }];
+export const POSES: { key: Pose; label: string }[] = [
+  { key: 'stand', label: '서기' }, { key: 'think', label: '생각' }, { key: 'sit', label: '앉기' }, { key: 'hug', label: '무릎 안기' },
+  { key: 'money', label: '돈 들기' }, { key: 'count', label: '돈 세기' }, { key: 'peek', label: '엿보기' }, { key: 'lie', label: '눕기' },
+];
+/** Poses where souka is down on the floor (camera aims lower, moving makes souka get up). */
+export const LOW_POSES: Pose[] = ['sit', 'hug', 'count', 'lie'];
 
 export function buildCharacter(G: Game) {
   const { scene, canvasTex, S } = G;
@@ -20,7 +25,6 @@ export function buildCharacter(G: Game) {
   function capsule(len: number, r0: number, r1: number) {
     const pts: THREE.Vector2[] = [];
     for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 - (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r1, -len + r1 - Math.sin(a) * r1)); }
-    pts.reverse();
     for (let i = 0; i <= 6; i++) { const a = (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r0, -r0 * 0.2 + Math.sin(a) * r0 * 0.2)); }
     return new THREE.LatheGeometry(pts, 18);
   }
@@ -121,6 +125,21 @@ export function buildCharacter(G: Game) {
   // feet stand on y=0: leg pivot 0.38 - 0.32 - 0.035
   body.position.y = 0.035;
 
+  // money (sheet: HOLDING MONEY / COUNTING): a bundle in the hands and a few on the floor
+  const billTex = canvasTex(32, 16, (g) => { g.fillStyle = '#6f9d52'; g.fillRect(0, 0, 32, 16); g.fillStyle = '#4f7a3a'; g.fillRect(0, 6, 32, 4); g.fillStyle = '#e8e4d6'; g.fillRect(13, 5, 6, 6); g.fillStyle = '#86b366'; g.fillRect(2, 2, 6, 2); g.fillRect(24, 12, 6, 2); });
+  const billMat = new THREE.MeshLambertMaterial({ map: billTex });
+  function bundle(n: number) {
+    const b = new THREE.Group();
+    for (let i = 0; i < n; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.045, 0.085), billMat); m.position.set((i % 2) * 0.012, i * 0.047, ((i * 7) % 3) * 0.006); m.rotation.y = (i % 3 - 1) * 0.08; b.add(m); }
+    return b;
+  }
+  const handMoney = bundle(3); handMoney.position.set(0, 0.5, 0.25); handMoney.visible = false; body.add(handMoney);
+  const floorMoney = new THREE.Group(); floorMoney.visible = false; char.add(floorMoney);
+  for (const [x, z, r, n] of [[-0.3, 0.42, 0.4, 2], [0.28, 0.48, -0.3, 3], [0.05, 0.62, 0.9, 1], [-0.12, 0.32, -0.6, 1]] as [number, number, number, number][]) {
+    const b = bundle(n); b.position.set(x, 0.0, z); b.rotation.y = r; floorMoney.add(b);
+  }
+  const countMoney = bundle(2); countMoney.visible = false; armR.add(countMoney); countMoney.position.set(0, -0.36, 0.02); countMoney.rotation.x = Math.PI / 2;
+
   // blob shadow
   const blobTex = canvasTex(16,16,(g)=>{ const gr=g.createRadialGradient(8,8,1,8,8,8); gr.addColorStop(0,'rgba(0,0,0,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,16,16); });
   const blob = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.75), new THREE.MeshBasicMaterial({ map:blobTex, transparent:true, depthWrite:false }));
@@ -152,6 +171,8 @@ export function buildCharacter(G: Game) {
     armL.rotation.set(0, 0, -0.14); armR.rotation.set(0, 0, 0.14);
     const { pose, walkPhase, speedNow } = S;
     const seatY = S.seatY / (char.scale.x || 1);
+    handMoney.visible = pose === 'money'; floorMoney.visible = countMoney.visible = pose === 'count';
+    const t = performance.now() / 1000;
     if (pose === 'stand') {
       const walk = Math.min(1, speedNow / 2);
       const s = Math.sin(walkPhase) * walk;
@@ -171,7 +192,7 @@ export function buildCharacter(G: Game) {
       armR.rotation.set(-2.15, 0, -0.35); armL.rotation.set(-0.55, 0, 0.35);
       headGroup.rotation.z = 0.12; headGroup.rotation.x = 0.06;
     } else if (pose === 'sit') {
-      body.position.y = seatY - 0.33;
+      body.position.y = seatY - 0.3;   // hips on the seat, legs just clear of it
       legL.rotation.x = legR.rotation.x = seatY < 0.1 ? -1.25 : -1.5;
       armL.rotation.set(-0.9, 0, -0.05); armR.rotation.set(-0.9, 0, 0.05);
       headGroup.rotation.x = 0.08;
@@ -181,6 +202,24 @@ export function buildCharacter(G: Game) {
       legL.rotation.x = -1.05 + s * 0.45; legR.rotation.x = -1.05 - s * 0.45;
       armL.rotation.set(-1.2, 0, 0.12); armR.rotation.set(-1.2, 0, -0.12);
       body.rotation.x = 0.12; headGroup.rotation.x = -0.05;
+    } else if (pose === 'hug') {     // on the floor, knees up, arms around them, head down a little
+      body.position.y = seatY - 0.3; body.rotation.x = 0.22;
+      legL.rotation.set(-2.05, 0, 0.12); legR.rotation.set(-2.05, 0, -0.12);
+      armL.rotation.set(-1.35, 0, 0.5); armR.rotation.set(-1.35, 0, -0.5);
+      headGroup.rotation.x = 0.18;
+    } else if (pose === 'money') {   // hugging a bundle of notes to the chest, quietly pleased
+      armL.rotation.set(-1.05, 0, 0.42); armR.rotation.set(-1.05, 0, -0.42);
+      headGroup.rotation.x = 0.12; headGroup.rotation.z = Math.sin(t * 1.3) * 0.04;
+    } else if (pose === 'count') {   // kneeling over little piles of notes, flicking through one
+      body.position.y = seatY - 0.2; body.rotation.x = 0.32;
+      legL.rotation.set(-1.15, 0, 0.1); legR.rotation.set(-1.15, 0, -0.1);
+      armL.rotation.set(-0.95, 0, 0.25); armR.rotation.set(-0.95 + Math.sin(t * 7) * 0.18, 0, -0.25);
+      headGroup.rotation.x = 0.28;
+    } else if (pose === 'peek') {    // leaning out sideways from behind something
+      body.rotation.z = 0.38; body.position.x = -0.12;
+      legL.rotation.z = -0.38; legR.rotation.z = -0.28;
+      armL.rotation.set(-0.3, 0, -0.5); armR.rotation.set(-0.2, 0, 0.9);
+      headGroup.rotation.z = 0.18; headGroup.rotation.y = Math.sin(t * 0.8) * 0.12;
     } else if (pose === 'drive') {   // in the driver's seat, hands on the wheel
       body.position.y = seatY - 0.33;
       legL.rotation.x = legR.rotation.x = -1.45;
