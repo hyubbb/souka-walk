@@ -6,7 +6,7 @@ import { FRAMES, SUB_STYLES } from '../game/modes';
 import { QUALITY } from '../game/quality';
 import { Warehouse } from './Warehouse';
 
-const SIZES = [{ s: 0.6, label: '꼬마' }, { s: 0.8, label: '작게' }, { s: 1, label: '보통' }, { s: 1.25, label: '크게' }, { s: 1.6, label: '거인' }] as const;
+const SIZE_MIN = 0.4, SIZE_MAX = 2.5, SIZE_STEP = 0.1;
 
 function Choices<T>({ items, isOn, onPick, label }: { items: readonly T[]; isOn: (it: T, i: number) => boolean; onPick: (it: T, i: number) => void; label: (it: T, i: number) => string }) {
   return (
@@ -145,7 +145,12 @@ export function Panel() {
         <h2>꾸미기</h2>
         <Choices items={ACC} isOn={(a) => S.acc[a.key]} onPick={(a) => G.toggleAcc(a.key)} label={(a) => a.label} />
         <h3 className="sub">크기</h3>
-        <Choices items={SIZES} isOn={(z) => Math.abs(S.size - z.s) < 0.01} onPick={(z) => G.setSize(z.s)} label={(z) => z.label} />
+        <div className="row size-row">
+          <button aria-label="작게" disabled={S.size <= SIZE_MIN + 1e-6} onClick={() => G.setSize(Math.max(SIZE_MIN, Math.round((S.size - SIZE_STEP) * 10) / 10))}>−</button>
+          <span className="size-val">×{S.size.toFixed(1)}</span>
+          <button aria-label="크게" disabled={S.size >= SIZE_MAX - 1e-6} onClick={() => G.setSize(Math.min(SIZE_MAX, Math.round((S.size + SIZE_STEP) * 10) / 10))}>+</button>
+          <button disabled={Math.abs(S.size - 1) < 1e-6} onClick={() => G.setSize(1)}>보통</button>
+        </div>
       </section>
 
       <section className="box">
