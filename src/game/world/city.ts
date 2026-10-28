@@ -151,13 +151,15 @@ export function setupCity(G: Game) {
   // ---- getting there and back ----
   function go(to: 'city' | 'alley') {
     if (to === 'city' && !enabled) { toast('이 버전에는 타케시바가 없어요.'); return; }
+    if (S.riding) { toast('차에서 내린 다음에 가자.'); return; }
     G.setUi({ fading: true });
     const ready = to === 'city' ? load() : Promise.resolve();
     if (to === 'city' && !loaded) toast('타케시바로 가는 중……');
     ready.then(() => {
       if (to === 'city') { char.position.set(arrive.x, 0, arrive.z + 1.6); char.rotation.y = 0; S.camYaw = Math.PI; }
       else { char.position.set(gateAlley.x, 0, gateAlley.z - 1.4); char.rotation.y = Math.PI; S.camYaw = 0; }
-      S.area = to; S.seat = null; S.seatY = 0; G.setPose('stand'); S.camDist = 6;
+      S.zone = 'alley'; S.area = to; S.seat = null;
+      for (const g of G.wallGroups) g.visible = true; S.seatY = 0; G.setPose('stand'); S.camDist = 6;
       G.applyTime(S.timeIdx);
       G.setUi({ fading: false });
       if (to === 'city') toast('타케시바에 도착. 바닷바람이 분다.');

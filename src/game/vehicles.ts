@@ -31,10 +31,13 @@ export function setupVehicles(G: Game) {
     const win = lam({ map:winTex }), shield = lam({ map:shieldTex });
     const body = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.58, 2.9), paint); body.position.y = 0.6; g.add(body);
     const cabinMats = [win, win, paint, paint, shield, shield];
+    // with the windscreen open you look into the cabin, so its inside faces have to draw too
+    const inWin = lam({ map:winTex, side:THREE.DoubleSide }), inPaint = lam({ color:0xa7c3c4, side:THREE.DoubleSide }), inShield = lam({ map:shieldTex, side:THREE.DoubleSide });
+    const openMats = [inWin, inWin, inPaint, inPaint, hidden, inShield];
     const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.62, 2.0), cabinMats); cabin.position.set(0, 1.2, -0.25); g.add(cabin);
     const roof = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 2.04), paint); roof.position.set(0, 1.53, -0.25); g.add(roof);
-    // while driving the roof slides open so you can see souka at the wheel
-    const openTop = (open) => { roof.visible = !open; cabin.material = open ? [win, win, hidden, paint, shield, shield] : cabinMats; };
+    // while driving the windscreen is open, so you can see souka at the wheel from the front
+    const openFront = (open) => { cabin.material = open ? openMats : cabinMats; };
     for (const zz of [1.47, -1.47]) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.16, 0.1), trim); b.position.set(0, 0.38, zz); g.add(b); }
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.02), lam({ color:0xf0eee4 })); plate.position.set(0, 0.55, 1.46); g.add(plate);
     const lampOff = new THREE.MeshBasicMaterial({ color:0xb9b8ae }), lampOn = new THREE.MeshBasicMaterial({ color:0xfff6cf });
@@ -51,8 +54,8 @@ export function setupVehicles(G: Game) {
     }
     const spot = headlight(g, 0, 0.75, 1.5, 18, 2.2);
     const bm = beam(g, 3.2, 7, 1.5);
-    const glass = [win, shield];
-    const v = { type:'car', name:'차', g, glass, openTop, seat:{ x:-0.3, z:-0.15, y:0.45, k:1 }, heading:rot, speed:0, steer:0, lights:false, wheels, fronts, wheelR:0.27,
+    // driver's seat: head (r 0.36, centre 0.74 above the hips) stays inside the cabin (y 0.89-1.51, x ±0.68)
+    const v = { type:'car', name:'차', g, openFront, seat:{ x:-0.28, z:-0.15, y:0.36 }, heading:rot, speed:0, steer:0, lights:false, wheels, fronts, wheelR:0.27,
       spec:{ max:7.5, rev:-2.8, acc:4.5, brake:9, turn:1.25 }, circles:[[0,-1.0,0.78],[0,0,0.78],[0,1.0,0.78]],
       size:[1.5, 3.0], grab:2.1, exit:1.25, seatY:0, lamps, tails, lampOn, lampOff, tailOn, tailOff, spot, beam:bm };
     vehicles.push(v); return v;
@@ -87,12 +90,8 @@ export function setupVehicles(G: Game) {
     const spot = headlight(g, 0, 0.7 / sc, d / 2, 18, 2.2);
     const bm = beam(g, 3.2 / sc, 7 / sc, d / 2);
     const r = w * sc * 0.5;
-    // the driver sits on the right (Japanese cars). These cars are closed, so souka (a bit smaller) pops
-    // its head out of the sunroof: head centre at roof height.
-    const H = o.size.h * sc, k = 0.78, seatY = Math.max(0.1, H + 0.12 - 0.77 * k);   // world height of the hips
-    const glass: THREE.Material[] = [];
-    g.traverse((m: any) => { if (m.isMesh && m.material.transparent && !glass.includes(m.material)) glass.push(m.material); });
-    const v = { type:'car', name:o.label, g, o, glass, seat:{ x:-w * 0.2, z:-d * 0.05, y:seatY, k }, heading:g.rotation.y, speed:0, steer:0, lights:false, wheels:[], fronts:[], wheelR:0.3,
+    // closed models: souka gets in and is not drawn while driving (it would poke through the body)
+    const v = { type:'car', name:o.label, g, o, hideRider:true, seat:{ x:0, z:0, y:0 }, heading:g.rotation.y, speed:0, steer:0, lights:false, wheels:[], fronts:[], wheelR:0.3,
       spec:{ max:8.5, rev:-2.8, acc:5, brake:9, turn:1.2 }, circles:[[0, -d*sc*0.32, r], [0, 0, r], [0, d*sc*0.32, r]],
       size:[w*sc, d*sc], grab:d*sc*0.5 + 0.7, exit:w*sc*0.5 + 0.5, seatY:0, lamps:[], tails:[], lampOn:null, lampOff:null, spot, beam:bm };
     vehicles.push(v); return v;
@@ -140,9 +139,10 @@ export function setupVehicles(G: Game) {
   function mount(v) {
     S.riding = v; v.speed = 0; S.seat = null; S.speedNow = 0;
     if (v.type === 'car') {
-      // souka stays visible in the driver's seat; the windows turn see-through while you drive
-      char.scale.setScalar(v.seat.k); S.seatY = v.seat.y; setPose('drive'); if (v.openTop) v.openTop(true);
-      for (const m of v.glass || []) { m.userData.op ??= { t: m.transparent, o: m.opacity }; m.transparent = true; m.opacity = 0.3; m.needsUpdate = true; }
+      // the home-made car: souka at the wheel (normal size, so it fits); the warehouse models: out of sight
+      char.scale.setScalar(1); S.seatY = v.seat.y; setPose('drive');
+      if (v.hideRider) char.visible = false;
+      if (v.openFront) v.openFront(true);
       placeRider(v);
     } else { S.seatY = v.seatY; setPose('ride'); }
     toast(v.type === 'car' ? '차에 탔다. 부릉.' : '자전거에 탔다.');
@@ -150,21 +150,26 @@ export function setupVehicles(G: Game) {
   function dismount() {
     const v = S.riding; if (!v) return;
     if (Math.abs(v.speed) > 0.6) { toast('멈추고 내리자.'); return; }
-    const h = v.heading, sn = Math.sin(h), cs = Math.cos(h);
-    const tries = [[-cs*v.exit, sn*v.exit], [cs*v.exit, -sn*v.exit], [-sn*(v.size[1]/2+0.5), -cs*(v.size[1]/2+0.5)]]; // right, left, behind
+    const h = v.heading, sn = Math.sin(h), cs = Math.cos(h), px = v.g.position.x, pz = v.g.position.z;
+    // the car itself must not count as an obstacle (dynCols leaves out the one being ridden), so search first
+    refreshDynCols();
+    const ok = (x: number, z: number): number | null => {
+      if (collide(x, z)) return null;
+      if (inCity()) { const gy = G.city.groundAt(x, z, v.g.position.y + 0.6); return gy === null || Math.abs(gy - v.g.position.y) > 0.6 ? null : gy; }
+      return x < -21 || x > 21 || z < -52.8 || z > 13.6 ? null : 0;
+    };
+    // driver's door, other door, behind, in front, then anywhere around the car further out
+    const side = v.size[0] / 2 + 0.45, end = v.size[1] / 2 + 0.45;
+    const tries: [number, number][] = [[-cs*side, sn*side], [cs*side, -sn*side], [-sn*end, -cs*end], [sn*end, cs*end]];
+    for (let r = Math.max(side, 0.9); r <= end + 2.5; r += 0.35)
+      for (let a = 0; a < 20; a++) tries.push([Math.sin(a / 20 * Math.PI * 2) * r, Math.cos(a / 20 * Math.PI * 2) * r]);
+    let spot: [number, number, number] | null = null;
+    for (const [dx, dz] of tries) { const y = ok(px + dx, pz + dz); if (y !== null) { spot = [px + dx, y, pz + dz]; break; } }
+    if (!spot) { toast('내릴 자리가 없어.'); return; }
     S.riding = null; refreshDynCols();
-    let placed = false;
-    for (const [dx, dz] of tries) {
-      const nx = v.g.position.x + dx, nz = v.g.position.z + dz;
-      if (collide(nx, nz)) continue;
-      let ny = 0;
-      if (inCity()) { const gy = G.city.groundAt(nx, nz, v.g.position.y + 0.6); if (gy === null || Math.abs(gy - v.g.position.y) > 0.6) continue; ny = gy; }
-      char.position.set(nx, ny, nz); placed = true; break;
-    }
-    if (!placed) { S.riding = v; toast('내릴 자리가 없어.'); return; }
-    if (v.openTop) v.openTop(false);
+    char.position.set(spot[0], spot[1], spot[2]);
+    if (v.openFront) v.openFront(false);
     v.speed = 0; char.visible = true; char.scale.setScalar(S.size || 1); char.rotation.y = h; S.seatY = 0; setPose('stand');
-    for (const m of v.glass || []) if (m.userData.op) { m.transparent = m.userData.op.t; m.opacity = m.userData.op.o; m.needsUpdate = true; }
   }
   /** Put souka in the driver's seat (car-local offset, turned with the car). */
   function placeRider(v) {
