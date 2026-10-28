@@ -7,9 +7,9 @@ import { HX } from './core';
 import { CATALOG, CATALOG_BY_ID, type CatalogItem } from './catalog';
 
 // Every model file, as a URL (inlined as data: URLs in the single-file build).
-const MODEL_URLS = import.meta.glob('../assets/kenney/**/*.glb', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
+const MODEL_URLS = import.meta.glob('../assets/{kenney,pack2}/**/*.glb', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
 const COLORMAPS = import.meta.glob('../assets/kenney/*/Textures/colormap.png', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
-const urlFor = (file: string) => MODEL_URLS[`../assets/kenney/${file}.glb`];
+const urlFor = (file: string) => MODEL_URLS[file.startsWith('pack2/') ? `../assets/${file}.glb` : `../assets/kenney/${file}.glb`];
 
 /** One loader per kit, so "Textures/colormap.png" inside a city-kit model resolves to that kit's colormap. */
 const loaders: Record<string, GLTFLoader> = {};
@@ -31,6 +31,10 @@ const PALETTE: Record<string, number> = {
   carpet: 0x6f7f56, carpetDarker: 0x56653f, carpetBlue: 0x5f6f82, carpetWhite: 0xe6dfcf,
   metal: 0xb8bab4, metalLight: 0xe4e1d8, metalMedium: 0x727671, metalDark: 0x4d5250,
   glass: 0xc6d4d2, plant: 0x6c8b4c, lamp: 0xf0dea6, _defaultMat: 0xe9e5db,
+  // second pack: furniture parts were renamed to these keys when converted, buildings keep their own names
+  brick: 0x9a5b48, fabric: 0xbfae8e, vase: 0x8fa3a6,
+  euLightYellow: 0xd8cca0, euBeige: 0xb7aa8a, euWhite: 0xe3dfd3, euGrey: 0x6b6d6a, euDarkGrey: 0x3b3c3c, euBrown: 0x5b4535,
+  euDarkRed: 0x7b3d35, euBrickRed: 0x8c4c3c, euLightBlue: 0x9eafb2, euGreyBlue: 0x6d7c80, euLightGrey: 0xb1b1ab, euWhiteBlue: 0xc8cfcd,
 };
 function toneColor(c: THREE.Color, name?: string) {
   if (name && PALETTE[name] !== undefined) return new THREE.Color(PALETTE[name]);
@@ -187,6 +191,7 @@ export function setupProps(G: Game) {
       }
       placeObj(o);
       if (item.seat) addSeatSpot(o, item, t, zone);
+      if (item.occ) m.traverse((c: any) => { if (c.isMesh) G.occluders.push(c); });
       G.resetSurfaces();
       return o;
     });
@@ -228,6 +233,7 @@ export function setupProps(G: Game) {
       o.g.parent?.remove(o.g);
       for (const k of o.cols) { const i = colliders.indexOf(k.col); if (i >= 0) colliders.splice(i, 1); }
       removeSpotsOf(o);
+      if (o.item?.occ) o.g.traverse((c: any) => { const i = G.occluders.indexOf(c); if (i >= 0) G.occluders.splice(i, 1); });
       editObjs.splice(editObjs.indexOf(o), 1);
     } else { o.hidden = true; placeObj(o); }
     if (S.sel === o) G.edit.select(null);
