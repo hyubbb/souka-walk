@@ -55,10 +55,30 @@ export function setupInteract(G: Game) {
     }
     return best;
   }
+  /** Getting up: step off at the seat's exit, or the nearest free spot around it if a table, a wall or another
+   *  piece of furniture is in the way (so souka never ends up stuck inside furniture). */
   function standUp() {
-    if (S.seat && S.seat.exit) char.position.set(S.seat.exit[0], 0, S.seat.exit[1]);
+    if (S.seat) {
+      const cx = char.position.x, cz = char.position.z;
+      const want: [number, number] = S.seat.exit || [cx, cz];
+      const free = (x: number, z: number) => !G.collide(x, z) && inBounds(x, z);
+      let spot: [number, number] | null = free(want[0], want[1]) ? want : null;
+      // search rings around the exit, then around the seat itself
+      for (const [ox, oz] of [want, [cx, cz]] as [number, number][]) {
+        for (let r = 0.3; !spot && r <= 2.4; r += 0.3)
+          for (let a = 0; !spot && a < 16; a++) {
+            const x = ox + Math.sin(a / 16 * Math.PI * 2) * r, z = oz + Math.cos(a / 16 * Math.PI * 2) * r;
+            if (free(x, z)) spot = [x, z];
+          }
+        if (spot) break;
+      }
+      if (spot) char.position.set(spot[0], char.position.y, spot[1]);
+    }
     S.seat = null; S.seatY = 0; G.setPose('stand');
   }
+  const inBounds = (x: number, z: number) => S.zone === 'house'
+    ? x >= HX - 2.2 && x <= HX + 14.8 && z >= 0.2 && z <= 14.3
+    : S.area === 'city' || (x >= -21 && x <= 21 && z >= -52.5 && z <= 13.5);
 
   // --- carrying props and putting them on whatever surface is in front ---
   const downRay = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0);

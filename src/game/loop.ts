@@ -52,8 +52,10 @@ export function setupLoop(G: Game) {
         gy = collide(p.x, nz) ? null : G.city.moveTo(p.x, p.y, p.z, p.x, nz);
         if (gy !== null) { p.z = nz; p.y = gy; }
       } else {
-        if (!collide(nx, p.z)) p.x = nx;
-        if (!collide(p.x, nz)) p.z = nz;
+        // already overlapping something (e.g. got up next to a table)? let souka walk out of it
+        const stuck = collide(p.x, p.z);
+        if (stuck || !collide(nx, p.z)) p.x = nx;
+        if (stuck || !collide(p.x, nz)) p.z = nz;
       }
       if (S.zone === 'alley' && S.area !== 'city') {
         char.position.x = THREE.MathUtils.clamp(char.position.x, -21, 21);
@@ -114,7 +116,7 @@ export function setupLoop(G: Game) {
       if (!S.drag) { let d = char.rotation.y - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); S.camYaw += d * Math.min(1, dt * 3); }
     }
     let dist = S.riding && S.riding.type === 'car' ? Math.max(S.camDist, 7) : THREE.MathUtils.clamp(S.camDist, G.minD(), G.maxD());
-    const target = tmpV.set(char.position.x, char.position.y + (S.riding ? 0.9 : S.pose === 'lie' ? 0.35 : S.pose === 'sit' ? 0.6 : 0.78), char.position.z);
+    const target = tmpV.set(char.position.x, char.position.y + (S.riding ? 0.9 : (S.pose === 'lie' ? 0.35 : S.pose === 'sit' ? 0.6 : 0.78) * (S.size || 1)), char.position.z);
     if (S.photo) target.add(pan);
     if (S.editMode) { target.copy(G.edit.pivot); pitch = G.edit.pitch; dist = G.edit.dist; }
     let cx = target.x + Math.sin(S.camYaw) * Math.cos(pitch) * dist;
