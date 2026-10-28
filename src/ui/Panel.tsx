@@ -51,6 +51,13 @@ export function Panel() {
             <button onClick={() => G.toggleReels()}>릴스 모드 (R)</button>
             <button onClick={() => G.edit.toggle()}>편집·창고 (B)</button>
           </div>
+          {G.city?.enabled && (
+            <div className="row">
+              {S.area === 'city' && S.zone === 'alley'
+                ? <button onClick={() => G.city.go('alley')}>골목으로 돌아가기</button>
+                : <button onClick={() => G.city.go('city')}>타케시바로 바로 가기</button>}
+            </div>
+          )}
         </section>
       )}
 
