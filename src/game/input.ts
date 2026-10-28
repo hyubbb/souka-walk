@@ -1,0 +1,65 @@
+// Keyboard, mouse drag and wheel. Typing in a text field never moves souka.
+import * as THREE from 'three';
+import type { Game } from './types';
+import { EXPR, POSES } from './character';
+import { TIMES } from './lighting';
+
+export function setupInput(G: Game) {
+  const { S, keys, canvas, stage } = G;
+  const isTyping = (e: Event) => { const t = e.target as HTMLElement; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); };
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (isTyping(e)) { if (e.key === 'Escape' || e.key === 'Enter') (e.target as HTMLElement).blur(); return; }
+    if ((e.target as HTMLElement)?.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return; // let buttons click
+    const k = e.key.toLowerCase();
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
+    keys[k] = true;
+    if (S.editMode) { G.edit.onKey(e, k); return; }
+    if ((k === 'p' && !S.reels) || (k === 'escape' && S.photo)) G.togglePhoto();
+    if ((k === 'r' && !S.photo) || (k === 'escape' && S.reels)) G.toggleReels();
+    if (k === 'v' && S.reels) G.toggleRec();
+    if (k === 'b' && !S.photo && !S.reels) { G.edit.toggle(); return; }
+    if (!S.photo && S.held && k === 'z') S.reach = Math.max(0.45, S.reach - 0.15);
+    if (!S.photo && S.held && k === 'x') S.reach = Math.min(1.6, S.reach + 0.15);
+    if (!S.photo && k === 'c') G.interact();
+    if (!S.photo && k === 'l' && S.riding) { G.setLights(S.riding, !S.riding.lights); G.toast(S.riding.lights ? '라이트 ON' : '라이트 OFF'); }
+    if (S.photo) {
+      if (k >= '1' && k <= '6') G.setExpr(EXPR[+k - 1].key);
+      if (k === 'f') G.setPose(POSES[(POSES.findIndex((p) => p.key === S.pose) + 1) % POSES.length].key);
+      if (k === 't') G.applyTime((S.timeIdx + 1) % TIMES.length);
+      if (k === 'g') G.toggleGuide();
+      if (k === ' ' || k === 'enter') G.shoot();
+    }
+  };
+  const onKeyUp = (e: KeyboardEvent) => { keys[e.key.toLowerCase()] = false; };
+  const onBlur = () => { for (const k in keys) keys[k] = false; };
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('blur', onBlur);
+
+  canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+    stage.focus(); S.drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId);
+    if (S.editMode) G.edit.pointerDown(e);
+  });
+  canvas.addEventListener('pointermove', (e: PointerEvent) => {
+    if (S.editMode) { G.edit.pointerMove(e); return; }
+    if (!S.drag) return;
+    const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag = { x: e.clientX, y: e.clientY };
+    S.camYaw -= dx * 0.008;
+    if (S.photo) S.camPitch = THREE.MathUtils.clamp(S.camPitch + dy * 0.006, -0.25, 1.45);
+    else if (!S.reels) S.walkPitch[S.zone] = THREE.MathUtils.clamp(S.walkPitch[S.zone] + dy * 0.006, 0.04, 1.45);
+  });
+  canvas.addEventListener('pointerup', () => { S.drag = null; if (S.editMode) G.edit.pointerUp(); });
+  canvas.addEventListener('pointercancel', () => { S.drag = null; });
+  stage.addEventListener('wheel', (e: WheelEvent) => {
+    e.preventDefault();
+    if (S.editMode) { G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + e.deltaY * 0.012, 2, 40); return; }
+    S.camDist = THREE.MathUtils.clamp(S.camDist + e.deltaY * 0.005, G.minD(), G.maxD());
+  }, { passive: false });
+
+  G.disposeInput = () => {
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+    window.removeEventListener('blur', onBlur);
+  };
+}
