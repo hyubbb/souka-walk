@@ -2,16 +2,20 @@
 // s = scale (default 2, so a Kenney wall 1.29 high matches our 2.6 m walls), h = target height instead of a scale,
 // y = fixed height for wall-mounted things, top = sits on whatever surface is below it,
 // col = false for things you can walk over, flat = rugs etc., seat = 'sit' | 'lie' adds a C-key spot.
-export type CatKey = 'living' | 'bed' | 'kitchen' | 'bath' | 'work' | 'small' | 'outdoor' | 'building';
+// len = target length of the longest side instead of a height, ry = turn the model so its front faces +z,
+// car = can be driven (C to get in) once it is out in the alley or the city.
+export type CatKey = 'living' | 'bed' | 'kitchen' | 'bath' | 'work' | 'small' | 'outdoor' | 'building' | 'car';
 export interface CatalogItem {
   id: string; file: string; name: string; cat: CatKey;
   s?: number; h?: number; y?: number; top?: boolean; col?: boolean; flat?: boolean; seat?: 'sit' | 'lie';
   /** Big enough to hide souka: the outdoor camera cuts it away like the alley buildings. */
   occ?: boolean;
+  len?: number; ry?: number; car?: boolean;
 }
 export const CATS: { key: CatKey; label: string }[] = [
   { key: 'living', label: '거실' }, { key: 'bed', label: '침실' }, { key: 'kitchen', label: '주방' }, { key: 'bath', label: '욕실' },
   { key: 'work', label: '작업실' }, { key: 'small', label: '소품' }, { key: 'outdoor', label: '바깥' }, { key: 'building', label: '건물' },
+  { key: 'car', label: '자동차' },
 ];
 export const CATALOG: CatalogItem[] = [
   { id: 'loungeSofa', file: 'furniture/loungeSofa', name: '소파', cat: 'living', seat: 'sit' },
@@ -192,5 +196,17 @@ export const CATALOG: CatalogItem[] = [
   { id: 'euBuilding4', file: 'pack2/euro/Building4', name: '회색 빌딩', cat: 'building', s: 1.9, occ: true },
   { id: 'euHouse1', file: 'pack2/euro/House1', name: '박공 주택', cat: 'building', s: 1.9, occ: true },
   { id: 'euHouse2', file: 'pack2/euro/House2', name: '현관 주택', cat: 'building', s: 1.9, occ: true },
+  // third set: Japanese street things and cars (src/assets/pack3; the ones in pack3/big are only on the full site)
+  { id: 'jpVendingRed', file: 'pack3/vending_red', name: '자판기 (빨강)', cat: 'outdoor', h: 1.8 },
+  { id: 'jpVendingBlue', file: 'pack3/vending_blue', name: '자판기 (파랑)', cat: 'outdoor', h: 1.8 },
+  { id: 'jpVendingGreen', file: 'pack3/vending_green', name: '자판기 (초록)', cat: 'outdoor', h: 1.8 },
+  { id: 'jpTicketGate', file: 'pack3/ticket_gate', name: '개찰구', cat: 'outdoor', h: 1.05 },
+  { id: 'jpMarketStall', file: 'pack3/big/market_stall', name: '노점', cat: 'outdoor', h: 2.6 },
+  { id: 'jpBuilding', file: 'pack3/jp_building', name: '역 앞 빌딩', cat: 'building', h: 21, occ: true },
+  { id: 'jpHouse', file: 'pack3/jhouse', name: '일본 주택', cat: 'building', h: 7.2, ry: -Math.PI / 2, occ: true },
+  { id: 'carPrelude', file: 'pack3/prelude', name: '혼다 프렐류드', cat: 'car', len: 3.1, car: true },
+  { id: 'carR32', file: 'pack3/r32', name: '스카이라인 R32', cat: 'car', len: 3.1, car: true },
+  { id: 'carGTR', file: 'pack3/big/gtr', name: '닛산 GT-R', cat: 'car', len: 3.2, car: true },
+  { id: 'carSupra', file: 'pack3/big/supra', name: '토요타 수프라', cat: 'car', len: 3.1, ry: -Math.PI / 2, car: true },
 ];
 export const CATALOG_BY_ID: Record<string, CatalogItem> = Object.fromEntries(CATALOG.map((c) => [c.id, c]));

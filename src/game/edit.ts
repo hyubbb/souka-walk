@@ -24,7 +24,7 @@ export function setupEdit(G: Game) {
     G.setUi({ prompt: '' });
     if (S.editMode) {
       if (S.seat || S.pose === 'sit' || S.pose === 'lie') G.standUp();
-      edit.pivot.set(char.position.x, 0.4, char.position.z); edit.dist = 12; edit.pitch = 1.0; S.speedNow = 0;
+      edit.pivot.set(char.position.x, char.position.y + 0.4, char.position.z); edit.dist = 12; edit.pitch = 1.0; S.speedNow = 0;
     } else {
       select(null);
       // if furniture now covers souka, step to the nearest free spot
@@ -65,6 +65,7 @@ export function setupEdit(G: Game) {
       if (o.dyn) o.off = (o.g.parent === scene) ? 0 : HX;
       o.g.position.x = wx - o.off; o.g.position.z = wz;
       if (o.hold || o.top) o.g.position.y = G.surfaceY(wx, wz, o.g, 1.5);   // small things ride on tables, shelves, sofas
+      else if (S.area === 'city' && o.off === 0 && !o.fixedY) { const gy = G.city.groundAt(wx, wz, o.g.position.y + 3); if (gy !== null) o.g.position.y = gy; }
       placeObj(o); saveSoon(); S.drag = { x: e.clientX, y: e.clientY };
       return;
     }

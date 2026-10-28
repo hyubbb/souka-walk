@@ -5,11 +5,35 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { EditObj, Game, Spot } from './types';
 import { HX } from './core';
 import { CATALOG, CATALOG_BY_ID, type CatalogItem } from './catalog';
+import { HEAVY_URLS } from './heavyAssets';
 
 // Every model file, as a URL (inlined as data: URLs in the single-file build).
-const MODEL_URLS = import.meta.glob('../assets/{kenney,pack2}/**/*.glb', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
+const MODEL_URLS: Record<string, string> = {
+  ...(import.meta.glob(['../assets/{kenney,pack2}/**/*.glb', '../assets/pack3/*.glb'], { query: '?url', import: 'default', eager: true }) as Record<string, string>),
+  ...HEAVY_URLS,
+};
 const COLORMAPS = import.meta.glob('../assets/kenney/*/Textures/colormap.png', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
-const urlFor = (file: string) => MODEL_URLS[file.startsWith('pack2/') ? `../assets/${file}.glb` : `../assets/kenney/${file}.glb`];
+const urlFor = (file: string) => MODEL_URLS[/^pack\d\//.test(file) ? `../assets/${file}.glb` : `../assets/kenney/${file}.glb`];
+/** Catalog entries whose model is in this build (the single-file page leaves the heavy ones out). */
+export const AVAILABLE = CATALOG.filter((c) => !!urlFor(c.file));
+
+/** Models reduced without normals (to simplify further): rebuild them flat-shaded, low-poly style.
+ *  Reads through getX() so interleaved attributes work (BufferGeometry.toNonIndexed in r128 does not). */
+export function flatShade(g: THREE.BufferGeometry) {
+  const idx = g.index, p = g.attributes.position, uv = g.attributes.uv, n = idx ? idx.count : p.count;
+  const P = new Float32Array(n * 3), U = uv ? new Float32Array(n * 2) : null;
+  for (let i = 0; i < n; i++) {
+    const k = idx ? idx.getX(i) : i;
+    P[i * 3] = p.getX(k); P[i * 3 + 1] = p.getY(k); P[i * 3 + 2] = p.getZ(k);
+    if (U) { U[i * 2] = uv.getX(k); U[i * 2 + 1] = uv.getY(k); }
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(P, 3));
+  if (U) out.setAttribute('uv', new THREE.BufferAttribute(U, 2));
+  for (const gr of g.groups) out.addGroup(gr.start, gr.count, gr.materialIndex);
+  out.computeVertexNormals();
+  return out;
+}
 
 /** One loader per kit, so "Textures/colormap.png" inside a city-kit model resolves to that kit's colormap. */
 const loaders: Record<string, GLTFLoader> = {};
@@ -43,7 +67,7 @@ function toneColor(c: THREE.Color, name?: string) {
   return out.lerp(WARM, 0.1);
 }
 const toned = new Map<string, THREE.Material>();
-function toneMaterial(m: any): THREE.Material {
+export function toneMaterial(m: any): THREE.Material {
   if (toned.has(m.uuid)) return toned.get(m.uuid)!;
   const glass = /glass/i.test(m.name || '') || (m.opacity !== undefined && m.opacity < 1);
   const out = new THREE.MeshLambertMaterial({
@@ -71,10 +95,15 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
     const kit = item.file.split('/')[0];
     templates.set(item.id, loaderFor(kit).loadAsync(urlFor(item.file)).then((gltf) => {
       const model = gltf.scene;
-      model.traverse((o: any) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(toneMaterial) : toneMaterial(o.material); });
+      model.traverse((o: any) => {
+        if (!o.isMesh) return;
+        if (!o.geometry.attributes.normal) o.geometry = flatShade(o.geometry);
+        o.material = Array.isArray(o.material) ? o.material.map(toneMaterial) : toneMaterial(o.material);
+      });
+      if (item.ry) { model.rotation.y = item.ry; model.updateMatrixWorld(true); }
       const raw = new THREE.Box3().setFromObject(model);
-      const rawH = Math.max(0.001, raw.max.y - raw.min.y);
-      const s = item.h ? item.h / rawH : (item.s ?? 2);
+      const rawH = Math.max(0.001, raw.max.y - raw.min.y), rawL = Math.max(0.001, raw.max.x - raw.min.x, raw.max.z - raw.min.z);
+      const s = item.len ? item.len / rawL : item.h ? item.h / rawH : (item.s ?? 2);
       model.scale.multiplyScalar(s);
       const b = new THREE.Box3().setFromObject(model);
       model.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
@@ -164,7 +193,7 @@ export function setupProps(G: Game) {
 
   /** Create the object right away (so edit mode can hold it) and fill in the model when it has loaded. */
   function spawn(id: string, opts: SpawnOpts): EditObj | null {
-    const item = CATALOG_BY_ID[id]; if (!item) return null;
+    const item = CATALOG_BY_ID[id]; if (!item || !urlFor(item.file)) return null;
     const zone = opts.zone || 'house';
     const parent = parentFor(zone), off = zone === 'house' ? HX : 0;
     const g = new THREE.Group();
@@ -185,13 +214,14 @@ export function setupProps(G: Game) {
       m.traverse((c: any) => { if (c.isMesh) { c.castShadow = shadow && !item.flat; c.receiveShadow = shadow; } });
       g.add(m);
       o.size = { w: t.w, d: t.d, h: t.h };
-      if (item.col !== false && !item.top && !item.flat && t.w > 0.15 && t.d > 0.15) {
+      if (item.col !== false && !item.car && !item.top && !item.flat && t.w > 0.15 && t.d > 0.15) {
         const col = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
         colliders.push(col); o.cols.push({ col, lx: 0, lz: 0, hw: t.w / 2, hd: t.d / 2 });
       }
       placeObj(o);
       if (item.seat) addSeatSpot(o, item, t, zone);
       if (item.occ) m.traverse((c: any) => { if (c.isMesh) G.occluders.push(c); });
+      if (item.car && G.addModelCar) G.addModelCar(o);
       G.resetSurfaces();
       return o;
     });
@@ -222,7 +252,7 @@ export function setupProps(G: Game) {
     const p = dropSpot();
     const o = spawn(id, { ...p, r: S.editMode ? 0 : G.char.rotation.y + Math.PI, spawned: true });
     if (!o) return;
-    o.ready!.then(() => { scene.updateMatrixWorld(true); if (o.top) { o.g.position.y = G.surfaceY(o.off + o.g.position.x, o.g.position.z, o.g, TOP_FROM); } G.edit.select(o); G.edit.saveSoon(); });
+    o.ready!.then(() => { scene.updateMatrixWorld(true); if (S.area === 'city' && S.zone === 'alley') G.city.settle(); if (o.top) { o.g.position.y = G.surfaceY(o.off + o.g.position.x, o.g.position.z, o.g, TOP_FROM); } G.edit.select(o); G.edit.saveSoon(); });
     G.edit.select(o);
     toast(`${o.label}을(를) 꺼냈어요.`);
   }

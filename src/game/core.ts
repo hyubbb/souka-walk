@@ -8,7 +8,7 @@ export const HX = 100;
 
 export function createCore(stage: HTMLElement): Game {
   const S: State = {
-    zone: 'house', pose: 'stand', expr: 'default', mouth: 'line',
+    zone: 'house', area: 'alley', pose: 'stand', expr: 'default', mouth: 'line',
     acc: { blush: true, hat: false, phones: false },
     photo: false, reels: false, editMode: false, guide: false,
     seat: null, seatY: 0, held: null, riding: null, reach: 0.75,
