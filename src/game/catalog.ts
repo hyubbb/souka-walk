@@ -2,14 +2,16 @@
 // s = scale (default 2, so a Kenney wall 1.29 high matches our 2.6 m walls), h = target height instead of a scale,
 // y = fixed height for wall-mounted things, top = sits on whatever surface is below it,
 // col = false for things you can walk over, flat = rugs etc., seat = 'sit' | 'lie' adds a C-key spot.
-export type CatKey = 'living' | 'bed' | 'kitchen' | 'bath' | 'work' | 'small' | 'outdoor';
+export type CatKey = 'living' | 'bed' | 'kitchen' | 'bath' | 'work' | 'small' | 'outdoor' | 'building';
 export interface CatalogItem {
   id: string; file: string; name: string; cat: CatKey;
   s?: number; h?: number; y?: number; top?: boolean; col?: boolean; flat?: boolean; seat?: 'sit' | 'lie';
+  /** Big enough to hide souka: the outdoor camera cuts it away like the alley buildings. */
+  occ?: boolean;
 }
 export const CATS: { key: CatKey; label: string }[] = [
   { key: 'living', label: '거실' }, { key: 'bed', label: '침실' }, { key: 'kitchen', label: '주방' }, { key: 'bath', label: '욕실' },
-  { key: 'work', label: '작업실' }, { key: 'small', label: '소품' }, { key: 'outdoor', label: '바깥' },
+  { key: 'work', label: '작업실' }, { key: 'small', label: '소품' }, { key: 'outdoor', label: '바깥' }, { key: 'building', label: '건물' },
 ];
 export const CATALOG: CatalogItem[] = [
   { id: 'loungeSofa', file: 'furniture/loungeSofa', name: '소파', cat: 'living', seat: 'sit' },
@@ -149,5 +151,46 @@ export const CATALOG: CatalogItem[] = [
   { id: 'electricity-pole', file: 'roads/electricity-pole', name: '전봇대', cat: 'outdoor', h: 7.5 },
   { id: 'detail-parasol-a', file: 'commercial/detail-parasol-a', name: '파라솔', cat: 'outdoor', h: 2.4 },
   { id: 'detail-parasol-b', file: 'commercial/detail-parasol-b', name: '파라솔 2', cat: 'outdoor', h: 2.4 },
+  // second pack (same source): simple wooden furniture, a town set and old European-style buildings
+  { id: 'p2Bed', file: 'pack2/furniture/Bed', name: '나무 침대', cat: 'bed', h: 0.8, seat: 'lie' },
+  { id: 'p2BedKing', file: 'pack2/furniture/BedKing', name: '나무 킹 침대', cat: 'bed', h: 0.8, seat: 'lie' },
+  { id: 'p2Closet', file: 'pack2/furniture/Closet', name: '나무 옷장', cat: 'bed', h: 2.3 },
+  { id: 'p2Closet2', file: 'pack2/furniture/Closet2', name: '서랍장', cat: 'bed', h: 1.6 },
+  { id: 'p2Lamp', file: 'pack2/furniture/Lamp', name: '플로어 램프', cat: 'bed', h: 1.7, col: false },
+  { id: 'p2Lamp2', file: 'pack2/furniture/Lamp2', name: '플로어 램프 2', cat: 'bed', h: 1.7, col: false },
+  { id: 'p2Sofa', file: 'pack2/furniture/Sofa', name: '1인 소파', cat: 'living', h: 1.0, seat: 'sit' },
+  { id: 'p2SofaDouble', file: 'pack2/furniture/SofaDouble', name: '2인 소파', cat: 'living', h: 1.0, seat: 'sit' },
+  { id: 'p2SofaLong', file: 'pack2/furniture/SofaLong', name: 'ㄱ자 소파', cat: 'living', h: 1.0, seat: 'sit' },
+  { id: 'p2CoffeeTable', file: 'pack2/furniture/CoffeeTable', name: '나무 좌탁', cat: 'living', h: 0.45 },
+  { id: 'p2CoffeeTable2', file: 'pack2/furniture/CoffeeTable2', name: '나무 좌탁 2', cat: 'living', h: 0.5 },
+  { id: 'p2Table', file: 'pack2/furniture/Table', name: '나무 식탁', cat: 'kitchen', h: 0.78 },
+  { id: 'p2Chair', file: 'pack2/furniture/Chair', name: '나무 등받이 의자', cat: 'kitchen', h: 1.0, seat: 'sit' },
+  { id: 'p2ChairCushioned', file: 'pack2/furniture/ChairCushioned', name: '방석 의자', cat: 'kitchen', h: 1.05, seat: 'sit' },
+  { id: 'p2ChairHandle', file: 'pack2/furniture/ChairHandle', name: '팔걸이 의자', cat: 'kitchen', h: 0.75, seat: 'sit' },
+  { id: 'p2Stool', file: 'pack2/furniture/Stool', name: '나무 스툴', cat: 'kitchen', h: 0.6, seat: 'sit' },
+  { id: 'p2BookCase', file: 'pack2/furniture/BookCase', name: '나무 책장', cat: 'work', h: 2.0 },
+  { id: 'p2BookCaseBooks', file: 'pack2/furniture/BookCaseBooks', name: '책 꽂힌 책장', cat: 'work', h: 2.0 },
+  { id: 'p2BookCaseLarge', file: 'pack2/furniture/BookCaseLarge', name: '넓은 나무 책장', cat: 'work', h: 2.0 },
+  { id: 'p2BookCaseLargeBooks', file: 'pack2/furniture/BookCaseLargeBooks', name: '책 꽂힌 넓은 책장', cat: 'work', h: 2.0 },
+  { id: 'p2Plant', file: 'pack2/furniture/Plant', name: '탁상 화분', cat: 'small', h: 0.45, top: true },
+  { id: 'p2Vase', file: 'pack2/furniture/Vase', name: '꽃병', cat: 'small', h: 0.45, top: true },
+  { id: 'p2Vase2', file: 'pack2/furniture/Vase2', name: '가는 꽃병', cat: 'small', h: 0.45, top: true },
+  { id: 'p2House', file: 'pack2/town/House', name: '2층 주택', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2House2', file: 'pack2/town/House2', name: '작은 주택', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2House3', file: 'pack2/town/House3', name: '3층 주택', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2House4', file: 'pack2/town/House4', name: '차고 주택', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2House5', file: 'pack2/town/House5', name: 'ㄱ자 주택', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2Flat', file: 'pack2/town/Flat', name: '맨션', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2Flat2', file: 'pack2/town/Flat2', name: '필로티 맨션', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2Shop', file: 'pack2/town/Shop', name: '가게', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2Hospital', file: 'pack2/town/Hospital', name: '병원', cat: 'building', s: 3.2, occ: true },
+  { id: 'euBuilding1', file: 'pack2/euro/Building1_Small', name: '노란 빌딩', cat: 'building', s: 1.9, occ: true },
+  { id: 'euBuilding2', file: 'pack2/euro/Building2_Small', name: '하늘색 빌딩', cat: 'building', s: 1.9, occ: true },
+  { id: 'euBuilding2L', file: 'pack2/euro/Building2_Large', name: '넓은 하늘색 빌딩', cat: 'building', s: 1.9, occ: true },
+  { id: 'euBuilding3', file: 'pack2/euro/Building3_Small', name: '벽돌 빌딩', cat: 'building', s: 1.9, occ: true },
+  { id: 'euBuilding3L', file: 'pack2/euro/Building3_Big', name: '큰 벽돌 빌딩', cat: 'building', s: 1.9, occ: true },
+  { id: 'euBuilding4', file: 'pack2/euro/Building4', name: '회색 빌딩', cat: 'building', s: 1.9, occ: true },
+  { id: 'euHouse1', file: 'pack2/euro/House1', name: '박공 주택', cat: 'building', s: 1.9, occ: true },
+  { id: 'euHouse2', file: 'pack2/euro/House2', name: '현관 주택', cat: 'building', s: 1.9, occ: true },
 ];
 export const CATALOG_BY_ID: Record<string, CatalogItem> = Object.fromEntries(CATALOG.map((c) => [c.id, c]));

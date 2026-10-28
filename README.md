@@ -37,7 +37,7 @@ npm run dev          # http://localhost:5173
 
 ### 창고
 
-편집 모드(B) 패널 아래의 창고에서 Kenney 가구·소품 137종을 방별 탭(거실, 침실, 주방, 욕실, 작업실, 소품, 바깥)으로 골라 꺼낼 수 있습니다.
+편집 모드(B) 패널 아래의 창고에서 가구·소품·건물 177종을 방별 탭(거실, 침실, 주방, 욕실, 작업실, 소품, 바깥, 건물)으로 골라 꺼낼 수 있습니다.
 
 - 꺼낸 물건은 화면 가운데에 놓입니다. 큰 가구는 바닥에, 작은 물건(모니터, 램프, 책 등)은 그 아래 가구 위에 올라갑니다.
 - 의자·소파·침대·변기·욕조·열린 상자 같은 물건은 꺼내자마자 C키로 앉거나 누울 수 있습니다.
@@ -61,6 +61,7 @@ src/
     Modals.tsx            찍은 사진 / 녹화한 릴스
     Warehouse.tsx         편집 모드의 창고 (분류 탭, 썸네일, 보관함)
   assets/kenney/          Kenney CC0 모델 (furniture, suburban, roads, commercial)
+  assets/pack2/           두 번째 팩을 GLB로 변환한 것 (furniture, town, euro)
   game/
     index.ts              createGame(): 모듈을 순서대로 조립
     core.ts               렌더러, 씬, 시드 랜덤, 텍스처 도우미, 충돌, 편집 가능한 물체 등록 (O/E)
@@ -87,6 +88,12 @@ src/
 가져왔습니다(CC0, `src/assets/kenney/LICENSE-*.txt`). 원래 색은 장난감처럼 쨍해서 `props.ts`의 `PALETTE`로
 재질 이름별 색을 하우스 시트 팔레트(베이지, 나무색, 회색, 올리브 소파, 청회색)에 맞추고,
 텍스처를 쓰는 도시 키트는 셰이더에서 채도를 낮춥니다. 새 Kenney 팩을 추가할 때도 이 규칙을 따르면 톤이 맞습니다.
+
+`assets/pack2`는 같은 출처의 FBX 팩 3개(나무 가구 23종, 텍스처 주택·상점 9종, 유럽풍 건물 8종)를 GLB로 바꾼 것입니다.
+변환하면서 cm를 m로 바꾸고, 가구는 정면이 +z를 보도록 90° 돌렸고, 가구 재질 이름은 `PALETTE` 키(wood, woodDark, fabric 등)로,
+건물 재질은 `eu*` 키로 바꿨습니다. 여러 재질이 섞인 메시는 재질별로 나눈 뒤 내보냈고(three.js GLTFExporter가 섞인 메시의 재질을
+엇갈리게 내보내는 문제 때문), gltf-transform으로 weld · dedup · quantize 했습니다. 은행 모델은 텍스처가 없어 뺐고,
+가장 큰 유럽풍 빌딩(Building1_Large)은 너무 무거워 같은 모양의 작은 버전만 넣었습니다.
 
 ### 알아 둘 점
 
