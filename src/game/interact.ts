@@ -130,7 +130,7 @@ export function setupInteract(G: Game) {
   function interact() {
     if (S.riding) { G.dismount(); return; }
     if (S.held) { putDown(); return; }
-    if (S.seat || S.pose === 'sit' || S.pose === 'lie') { standUp(); return; }
+    if (S.seat || S.pose !== 'stand') { standUp(); return; }
     const sp = nearestSpot();
     if (sp && sp.hold) { pickUp(sp.hold); return; }
     if (sp && sp.veh) { G.mount(sp.veh); return; }

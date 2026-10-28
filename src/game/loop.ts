@@ -81,7 +81,7 @@ export function setupLoop(G: Game) {
     const sp = (S.pose === 'stand' && !S.riding) ? G.nearestSpot() : null;
     if (S.riding) prompt = `${Math.round(Math.abs(S.riding.speed) * 6)}km/h · C 내리기 · L 라이트 ${S.riding.lights ? 'ON' : 'OFF'}`;
     else if (S.held) prompt = 'C : ' + S.held.name + ' 내려놓기 · Z/X 거리';
-    else if (S.seat || S.pose === 'sit' || S.pose === 'lie') prompt = 'C : ' + (S.seat && S.seat.pose === 'stand' ? '내려오기' : '일어나기');
+    else if (S.seat || S.pose === 'sit' || S.pose === 'hug' || S.pose === 'count' || S.pose === 'lie') prompt = 'C : ' + (S.seat && S.seat.pose === 'stand' ? '내려오기' : '일어나기');
     else if (sp) prompt = 'C : ' + sp.label;
     else if (S.zone === 'alley' && char.position.z < -49 && Math.abs(char.position.x) < 6) {
       prompt = '편의점 도착';
@@ -116,7 +116,7 @@ export function setupLoop(G: Game) {
       if (!S.drag) { let d = char.rotation.y - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); S.camYaw += d * Math.min(1, dt * 3); }
     }
     let dist = S.riding && S.riding.type === 'car' ? Math.max(S.camDist, 7) : THREE.MathUtils.clamp(S.camDist, G.minD(), G.maxD());
-    const target = tmpV.set(char.position.x, char.position.y + (S.riding ? 0.9 : (S.pose === 'lie' ? 0.35 : S.pose === 'sit' ? 0.6 : 0.78) * (S.size || 1)), char.position.z);
+    const target = tmpV.set(char.position.x, char.position.y + (S.riding ? 0.9 : (S.pose === 'lie' ? 0.35 : S.pose === 'sit' || S.pose === 'hug' || S.pose === 'count' ? 0.6 : 0.78) * (S.size || 1)), char.position.z);
     if (S.photo) target.add(pan);
     if (S.editMode) { target.copy(G.edit.pivot); pitch = G.edit.pitch; dist = G.edit.dist; }
     let cx = target.x + Math.sin(S.camYaw) * Math.cos(pitch) * dist;

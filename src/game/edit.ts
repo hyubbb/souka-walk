@@ -23,7 +23,7 @@ export function setupEdit(G: Game) {
     S.editMode = !S.editMode;
     G.setUi({ prompt: '' });
     if (S.editMode) {
-      if (S.seat || S.pose === 'sit' || S.pose === 'lie') G.standUp();
+      if (S.seat || S.pose !== 'stand') G.standUp();
       edit.pivot.set(char.position.x, char.position.y + 0.4, char.position.z); edit.dist = 12; edit.pitch = 1.0; S.speedNow = 0;
     } else {
       select(null);
