@@ -120,22 +120,7 @@ export function buildHouse(G: Game) {
     piece(cur, len, 0, WH);
     return g;
   }
-  function plant(x, z, s = 1, parent?) {
-    OH('화분');
-    const g = new THREE.Group(); g.position.set(x, 0, z); (parent || house).add(g);
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.2*s, 0.15*s, 0.32*s, 6), M.pot); p.position.y = 0.16*s; g.add(p);
-    for (let i = 0; i < 5; i++) { const l = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18*s, 0), M.leaf); const a = i * 1.3; l.position.set(Math.cos(a)*0.12*s, 0.42*s + i*0.07*s, Math.sin(a)*0.12*s); l.scale.y = 1.4; g.add(l); }
-    addColL(x, z, 0.4*s, 0.4*s); E(); return g;
-  }
   function wallDecor(t, w, h, x, y, z, rotY) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), lam({ map:t })); m.position.set(x, y, z); m.rotation.y = rotY; house.add(m); return m; }
-  function chair(x, z, rotY, mat = M.furn) {
-    OH('식탁 의자');
-    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; house.add(g);
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), mat); seat.position.y = 0.38; g.add(seat);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.06), mat); back.position.set(0, 0.66, -0.22); g.add(back);
-    for (const [lx, lz] of [[-0.2,-0.2],[0.2,-0.2],[-0.2,0.2],[0.2,0.2]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.38, 0.05), mat); l.position.set(lx, 0.19, lz); g.add(l); }
-    addColL(x, z, 0.45, 0.45); E(); return g;
-  }
 
   // floors
   floor(0, 0, 7.5, 6, tex.wood);            // bedroom
@@ -175,120 +160,19 @@ export function buildHouse(G: Game) {
   OH('실외기');
   hbox(0.6, 0.55, 0.85, withFront(M.white, lam({ map:tex.acUnit }), '+x'), -1.9, 0, 6.3);
   E();
-  plant(-1.8, 2.2, 1.3); plant(-1.8, 13.4, 1.1);
 
+  // Furniture is now Kenney models placed by props.ts (HOUSE_DEFAULTS). What stays here is hand-built.
   // 1. BEDROOM
-  OH('침대');
-  hbox(1.9, 0.28, 2.5, M.furn, 2.95, 0, 1.35);                                    // bed frame
-  hbox(1.8, 0.16, 2.4, M.mattress, 2.95, 0.28, 1.35, { col:false });
-  hbox(1.86, 0.08, 1.75, M.plaid, 2.95, 0.4, 1.75, { col:false });                // blanket
-  hbox(1.3, 0.12, 0.45, M.mattress, 2.95, 0.44, 0.45, { col:false });             // pillow
-  hbox(1.9, 0.85, 0.1, M.dark, 2.95, 0, 0.14, { col:false });                     // headboard
-  E();
-  OH('협탁');
-  hbox(0.55, 0.5, 0.5, M.furn, 4.35, 0, 0.4);                                     // nightstand
-  const lamp1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 0.22, 6), M.lamp); lamp1.position.set(4.35, 0.68, 0.4); house.add(lamp1);
-  E();
-  OH('옷장');
-  hbox(0.75, 2.2, 1.7, withFront(M.dark, lam({ map:tex.door }), '-x'), 7.0, 0, 2.1); // wardrobe
-  E();
-  OH('러그(침실)');
-  const rug1 = floor(1.9, 2.9, 4.3, 4.3, tex.rugNavy, 2.4, 0.02);
-  E();
-  plant(0.45, 5.5, 1.1);
   wallDecor(poster(1), 0.55, 0.7, 5.6, 1.6, 0.11, 0);
   wallDecor(poster(3), 0.45, 0.55, 6.3, 1.7, 0.11, 0);
   wallDecor(poster(4), 0.5, 0.62, 0.11, 1.6, 1.8, Math.PI/2);
 
   // 2. WORK ROOM
-  OH('책상');
-  hbox(2.8, 0.06, 0.95, M.furn, 11.0, 0.62, 0.58, { col:false });                  // desk top
-  for (const lx of [9.7, 12.3]) hbox(0.08, 0.62, 0.9, M.furn, lx, 0, 0.58, { col:false });
-  addColL(11.0, 0.58, 2.8, 0.95);
-  hbox(0.6, 0.5, 0.55, withFront(lam({ color:0xd7d2c4 }), lam({ map:tex.crt }), '+z'), 10.7, 0.68, 0.45, { col:false });  // CRT monitor
-  hbox(0.6, 0.04, 0.22, lam({ color:0xcfcabc }), 10.7, 0.68, 0.92, { col:false }); // keyboard
-  hbox(0.25, 0.55, 0.5, lam({ color:0xcfcabc }), 12.0, 0.68, 0.45, { col:false });  // PC tower
-  const lamp2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.12, 6), M.lamp); lamp2.position.set(9.6+0.3, 1.1, 0.35); house.add(lamp2);
-  hbox(0.03, 0.4, 0.03, M.black, 9.9, 0.68, 0.35, { col:false });
-  E();
-  // office chair
-  OH('작업 의자');
-  const oc = new THREE.Group(); oc.position.set(11.0, 0, 1.6); house.add(oc);
-  { const s = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.5), M.black); s.position.y = 0.42; oc.add(s);
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.07), M.black); b.position.set(0, 0.8, 0.25); oc.add(b);
-    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.38, 5), M.metal); st.position.y = 0.2; oc.add(st);
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.04, 5), M.black); base.position.y = 0.04; oc.add(base); }
-  addColL(11.0, 1.7, 0.45, 0.35);
-  E();
-  OH('책장');
-  hbox(0.45, 2.0, 2.2, withFront(M.dark, lam({ map:tex.books }), '-x'), 14.65, 0, 4.3); // bookshelf
-  E();
-  OH('러그(작업실)');
-  floor(9.4, 1.4, 12.8, 4.2, tex.rugBrown, 3.4, 0.02);
-  E();
-  plant(14.5, 0.5, 0.9);
   wallDecor(poster(2), 0.5, 0.62, 8.2, 1.7, 0.11, 0);
 
   // 4. LIVING ROOM
-  OH('소파');
-  const sofaG = new THREE.Group(); house.add(sofaG);
-  hbox(3.2, 0.4, 0.95, M.sofa, 2.7, 0, 6.75, { parent:sofaG });                    // seat
-  hbox(3.2, 0.5, 0.25, M.sofa, 2.7, 0.4, 6.35, { parent:sofaG, col:false });       // back
-  for (const ax of [1.0, 4.4]) hbox(0.22, 0.6, 0.95, M.sofa, ax, 0, 6.75, { parent:sofaG });
-  E();
-  OH('커피 테이블');
-  hbox(1.8, 0.38, 0.9, M.furn, 2.7, 0, 9.0);                                      // coffee table
-  E();
-
-  OH('TV');
-  hbox(2.4, 0.48, 0.6, M.dark, 2.7, 0, 13.95);                                    // TV stand
-  hbox(1.3, 0.75, 0.5, withFront(M.black, lam({ map:tex.tv }), '-z'), 2.7, 0.48, 14.0, { col:false });
-  E();
-  OH('수납장');
-  hbox(0.6, 0.7, 0.55, M.furn, 5.0, 0, 6.45);                                     // side cabinet
-  E();
-  OH('러그(거실)');
-  floor(1.1, 8.0, 4.3, 10.6, tex.rugGray, 3.2, 0.02);
-  E();
-  plant(0.5, 13.9, 1.2); plant(7.4, 6.6, 1.0);
   wallDecor(poster(0), 0.7, 0.55, 0.11, 1.6, 7.3, Math.PI/2);
 
-  // 3. KITCHEN
-  OH('싱크대');
-  hbox(4.8, 0.62, 0.65, withFront(M.white, lam({ map:tex.counter }), '+z', M.counterTop), 12.5, 0, 6.45);
-  hbox(0.9, 0.02, 0.62, lam({ map:tex.sink }), 11.3, 0.62, 6.45, { col:false });
-  hbox(0.9, 0.02, 0.62, lam({ map:tex.stove }), 13.4, 0.62, 6.45, { col:false });
-  hbox(4.8, 0.55, 0.38, M.white, 12.5, 1.65, 6.3, { col:false });                 // upper cabinets
-  E();
-  OH('냉장고');
-  hbox(0.8, 2.35, 0.85, withFront(lam({ color:0xe8e8e4 }), lam({ map:tex.fridge }), '-x'), 14.55, 0, 8.0); // fridge
-  E();
-  OH('식탁');
-  hbox(1.4, 0.06, 0.95, M.furn, 10.7, 0.54, 8.8, { col:false });                  // dining table
-  for (const [lx, lz] of [[10.1,8.4],[11.3,8.4],[10.1,9.2],[11.3,9.2]]) hbox(0.06, 0.54, 0.06, M.furn, lx, 0, lz, { col:false });
-  addColL(10.7, 8.8, 1.4, 0.95);
-  hbox(0.16, 0.1, 0.16, M.white, 10.9, 0.6, 8.7, { col:false });
-  E();
-  chair(10.7, 7.85, 0);          // north chair, faces +z
-  chair(10.7, 9.75, Math.PI);    // south chair, faces -z
-  plant(8.5, 7.3, 0.8);
-
-  // 5. BATH ROOM
-  OH('세탁기');
-  hbox(0.85, 0.85, 0.8, withFront(M.white, lam({ map:tex.washer }), '-z'), 10.9, 0, 13.95); // washer
-  E();
-  OH('세면대');
-  hbox(0.75, 1.15, 0.85, M.white, 8.5, 0, 12.4);                                  // real-size sink: taller than souka
-  hbox(0.55, 0.06, 0.6, lam({ color:0xc7cbcc }), 8.5, 1.15, 12.4, { col:false });
-  hbox(0.05, 0.3, 0.05, M.metal, 8.3, 1.15, 12.4, { col:false });
-  wallDecor(canvasTex(8,8,(g)=>{g.fillStyle='#b9c8cf';g.fillRect(0,0,8,8);g.fillStyle='#e4eef2';g.fillRect(1,1,2,5);}), 0.62, 0.72, 8.11, 1.95, 12.4, Math.PI/2);
-  E();
-  OH('변기');
-  const toilet = new THREE.Group(); toilet.position.set(9.3, 0, 14.0); house.add(toilet);
-  { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.4, 7), M.white); b.position.y = 0.2; toilet.add(b);
-    const t = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.2), M.white); t.position.set(0, 0.55, 0.25); toilet.add(t); }
-  addColL(9.3, 14.0, 0.5, 0.6);
-  E();
   OH('빨래 바구니');
   hbox(0.4, 0.3, 0.3, lam({ color:0xc9b48a }), 11.05, 0, 11.45);                   // laundry basket
   E();
@@ -330,16 +214,6 @@ export function buildHouse(G: Game) {
   const scaleTex = canvasTex(32, 32, (g) => { g.fillStyle='#eeeeea'; g.fillRect(0,0,32,32); g.fillStyle='#d6d6d0'; g.fillRect(0,0,32,2); g.fillStyle='#3a4a40'; g.fillRect(10,5,12,6); g.fillStyle='#9fe0a8'; g.fillRect(11,6,10,4); g.fillStyle='#c9c9c3'; g.fillRect(5,16,9,11); g.fillRect(18,16,9,11); });
   OH('체중계');
   hbox(0.72, 0.09, 0.72, withFront(M.white, M.white, '+z', lam({ map:scaleTex })), 10.0, 0, 12.85, { col:false });
-  E();
-  // delivery box at the entrance (souka can sit inside)
-  const cardTex = canvasTex(32, 32, (g,w,h) => { speckle(g,w,h,'#c49a62',0.12,0.5); g.fillStyle='rgba(120,80,40,.25)'; g.fillRect(0,0,32,1); g.fillStyle='#b98b55'; g.fillRect(14,0,4,32); g.fillStyle='#3a2a1a'; g.fillRect(4,22,3,3); g.fillRect(9,22,3,3); g.fillStyle='#c0392b'; g.fillRect(22,4,6,4); });
-  OH('택배 상자');
-  { const card = lam({ map:cardTex, side:THREE.DoubleSide }); const g = new THREE.Group(); g.position.set(12.25, 0, 11.95); house.add(g);
-    const W2 = 1.0, D2 = 0.85, H2 = 0.85, T2 = 0.04;
-    for (const [w, d, x, z] of [[W2, T2, 0, D2/2], [W2, T2, 0, -D2/2], [T2, D2, W2/2, 0], [T2, D2, -W2/2, 0]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, H2, d), card); m.position.set(x, H2/2, z); g.add(m); }
-    const bot = new THREE.Mesh(new THREE.BoxGeometry(W2, 0.03, D2), card); bot.position.y = 0.015; g.add(bot);
-    for (const sx of [-1, 1]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(D2, 0.4), card); f.position.set(sx*(W2/2 + 0.12), H2 + 0.1, 0); f.rotation.y = Math.PI/2; f.rotation.x = 0; f.rotation.z = sx*0.9; g.add(f); }
-    addColL(12.25, 11.95, W2, D2); }
   E();
   // pile of clothes in the bedroom
   OH('옷 더미');

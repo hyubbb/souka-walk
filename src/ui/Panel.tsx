@@ -4,6 +4,7 @@ import { ACC, EXPR, MOUTHS, POSES } from '../game/character';
 import { TIMES } from '../game/lighting';
 import { FRAMES, SUB_STYLES } from '../game/modes';
 import { QUALITY } from '../game/quality';
+import { Warehouse } from './Warehouse';
 
 function Choices<T>({ items, isOn, onPick, label }: { items: readonly T[]; isOn: (it: T, i: number) => boolean; onPick: (it: T, i: number) => void; label: (it: T, i: number) => string }) {
   return (
@@ -27,7 +28,7 @@ export function Panel() {
     <aside className="panel">
       <div>
         <h1>souka 출근길</h1>
-        <p className="sub">PROTOTYPE 0.8 · 집 → 골목 → 편의점<br />A QUIET WALK TO WORK</p>
+        <p className="sub">PROTOTYPE 0.9 · 집 → 골목 → 편의점<br />A QUIET WALK TO WORK</p>
       </div>
 
       {walking && (
@@ -41,12 +42,12 @@ export function Panel() {
             <dt><K>C</K></dt><dd>앉기 · 눕기 · 문 · 들기 · 차/자전거 타기</dd>
             <dt><K>L</K></dt><dd>라이트 켜기 / 끄기 (탑승 중)</dd>
             <dt><K>Z</K> <K>X</K></dt><dd>들고 있는 물건 놓을 거리</dd>
-            <dt><K>P</K> <K>R</K> <K>B</K></dt><dd>사진 · 릴스 녹화 · 편집 모드</dd>
+            <dt><K>P</K> <K>R</K> <K>B</K></dt><dd>사진 · 릴스 녹화 · 편집 모드 (창고)</dd>
           </dl>
           <div className="row">
             <button className="primary" onClick={() => G.togglePhoto()}>사진 모드 (P)</button>
             <button onClick={() => G.toggleReels()}>릴스 모드 (R)</button>
-            <button onClick={() => G.edit.toggle()}>편집 모드 (B)</button>
+            <button onClick={() => G.edit.toggle()}>편집·창고 (B)</button>
           </div>
         </section>
       )}
@@ -84,25 +85,29 @@ export function Panel() {
           <dl className="keys">
             <dt>클릭 · 드래그</dt><dd>물건 선택 · 옮기기 (빈 곳 드래그는 카메라 회전)</dd>
             <dt><K>Q</K> <K>E</K></dt><dd>회전 15° (<K>Shift</K> 90°)</dd>
-            <dt><K>Delete</K></dt><dd>숨기기</dd>
+            <dt><K>[</K> <K>]</K></dt><dd>크기 줄이기 · 키우기</dd>
+            <dt><K>Delete</K></dt><dd>창고에 넣기</dd>
             <dt><K>WASD</K> · 휠</dt><dd>화면 이동 · 확대</dd>
           </dl>
-          <p className="sel">{S.sel ? `선택: ${S.sel.name}${S.sel.hidden ? ' (숨김)' : ''}` : '선택한 물건 없음'}</p>
+          <p className="sel">{S.sel ? `선택: ${S.sel.name}${Math.abs(S.sel.g.scale.x - (S.sel.baseScale || 1)) > 0.01 ? ` ×${(S.sel.g.scale.x / (S.sel.baseScale || 1)).toFixed(2)}` : ''}` : '선택한 물건 없음'}</p>
           <div className="row">
-            <button onClick={() => G.edit.rotateSel(15)}>↺ 15°</button>
-            <button onClick={() => G.edit.rotateSel(-15)}>↻ 15°</button>
-            <button onClick={() => G.edit.rotateSel(90)}>90°</button>
-            <button onClick={() => G.edit.hideSel()}>{S.sel?.hidden ? '보이기' : '숨기기'}</button>
-            <button onClick={() => G.edit.resetSel()}>원위치</button>
+            <button disabled={!S.sel} onClick={() => G.edit.rotateSel(15)}>↺ 15°</button>
+            <button disabled={!S.sel} onClick={() => G.edit.rotateSel(-15)}>↻ 15°</button>
+            <button disabled={!S.sel} onClick={() => G.edit.rotateSel(90)}>90°</button>
+            <button disabled={!S.sel} onClick={() => G.edit.scaleSel(1 / 1.15)}>작게</button>
+            <button disabled={!S.sel} onClick={() => G.edit.scaleSel(1.15)}>크게</button>
           </div>
           <div className="row">
-            <button onClick={() => G.edit.showAll()}>숨긴 물건 보이기</button>
+            <button disabled={!S.sel} onClick={() => G.edit.putAwaySel()}>창고에 넣기</button>
+            <button disabled={!S.sel || S.sel.spawned} onClick={() => G.edit.resetSel()}>원위치</button>
             <button onClick={() => G.edit.resetAll()}>전체 초기화</button>
             <button className="primary" onClick={() => G.edit.toggle()}>편집 끝내기 (B)</button>
           </div>
-          {ui.resetConfirm && <p className="empty">한 번 더 누르면 모든 물건이 처음 자리로 돌아가요.</p>}
+          {ui.resetConfirm && <p className="empty">한 번 더 누르면 꺼낸 물건은 창고로 가고, 집 가구는 처음 자리로 돌아가요.</p>}
         </section>
       )}
+
+      {S.editMode && <Warehouse />}
 
       {S.reels && (
         <section className="box">
