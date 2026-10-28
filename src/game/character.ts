@@ -1,4 +1,4 @@
-// souka: low-poly body, face decals (eyes / mouth / blush), accessories and poses.
+// souka: smooth soft-vinyl body (character sheet v2), face decals (eyes / mouth / blush), accessories and poses.
 import * as THREE from 'three';
 import type { Game, Pose } from './types';
 import { HX } from './core';
@@ -6,6 +6,7 @@ import { HX } from './core';
 export const EXPR = [
   { key: 'default', label: '기본' }, { key: 'blink', label: '깜빡' }, { key: 'surprised', label: '놀람' },
   { key: 'happy', label: '행복' }, { key: 'confused', label: '혼란' }, { key: 'suspicious', label: '의심' },
+  { key: 'love', label: '두근' },
 ];
 export const MOUTHS = [{ key: 'line', label: '일자' }, { key: 'cat', label: ':3' }, { key: 'o', label: 'o' }];
 export const ACC = [{ key: 'blush', label: '볼터치' }, { key: 'hat', label: '털모자' }, { key: 'phones', label: '헤드폰' }] as const;
@@ -13,14 +14,23 @@ export const POSES: { key: Pose; label: string }[] = [{ key: 'stand', label: '�
 
 export function buildCharacter(G: Game) {
   const { scene, canvasTex, S } = G;
-  const skin = new THREE.MeshPhongMaterial({ color:0xece9e1, flatShading:true, shininess:0, specular:0x000000, emissive:0x1c1b18 });
+  // smooth, slightly soft-vinyl white (sheet v2): smooth shading, a faint broad highlight
+  const skin = new THREE.MeshPhongMaterial({ color:0xebe8e0, shininess:10, specular:0x161616, emissive:0x1e1d1a });
+  /** A round-ended tube along -y from the pivot (r0 at the top, r1 at the bottom end), like soft clay. */
+  function capsule(len: number, r0: number, r1: number) {
+    const pts: THREE.Vector2[] = [];
+    for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 - (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r1, -len + r1 - Math.sin(a) * r1)); }
+    pts.reverse();
+    for (let i = 0; i <= 6; i++) { const a = (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r0, -r0 * 0.2 + Math.sin(a) * r0 * 0.2)); }
+    return new THREE.LatheGeometry(pts, 18);
+  }
   const char = new THREE.Group();     // world position + facing
   const body = new THREE.Group();     // pose root (for sit / lie)
   char.add(body);
 
   const headGroup = new THREE.Group();
-  const headMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.36, 1), skin);
-  headMesh.scale.set(1.0, 0.94, 0.96); headGroup.add(headMesh);
+  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.36, 36, 26), skin);
+  headMesh.scale.set(1.0, 0.95, 0.97); headGroup.add(headMesh);
 
   // face decals
   function eyeTex(type, side) {
@@ -34,6 +44,13 @@ export function buildCharacter(G: Game) {
       if (type==='surprised') { px=c; py=c; pr=1.9; }
       if (type==='confused')  { px=c+(side>0?6:-6); py=c+(side>0?-5:5); }
       if (type==='suspicious'){ g.clearRect(0,0,32,10); g.fillRect(2,9,28,3); px=c+side*6; py=c+1; }
+      if (type==='love') {
+        if (side > 0) {   // the big eye squeezes shut with a little pink heart beside it
+          g.clearRect(0,0,32,32); g.beginPath(); g.arc(c,c,r,0,Math.PI*2); g.stroke(); g.fillRect(4,15,24,2.6);
+          g.beginPath(); g.arc(c-4,c+5,2.2,0,Math.PI*2); g.fill(); return;
+        }
+        px=c+3; py=c+3;
+      }
       g.beginPath(); g.arc(px,py,pr,0,Math.PI*2); g.fill();
     });
   }
@@ -84,18 +101,22 @@ export function buildCharacter(G: Game) {
   }
   body.add(headGroup);
 
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 0.4, 7), skin); torso.position.y = 0.55; body.add(torso);
+  // soft pear-shaped torso: narrow neck under the big head, round belly, round bottom
+  const torsoPts = [[0.0, 0.33], [0.07, 0.335], [0.125, 0.36], [0.158, 0.41], [0.168, 0.48], [0.16, 0.56], [0.14, 0.64], [0.115, 0.71], [0.085, 0.77], [0.06, 0.8], [0.0, 0.81]]
+    .map(([x, y]) => new THREE.Vector2(x, y));
+  const torso = new THREE.Mesh(new THREE.LatheGeometry(new THREE.SplineCurve(torsoPts).getPoints(24), 24), skin);
+  torso.scale.z = 0.88; body.add(torso);
   function limb(len, r, x, y, handR, foot?) {
     const pivot = new THREE.Group(); pivot.position.set(x, y, 0);
-    const seg = new THREE.Mesh(new THREE.CylinderGeometry(r, r*1.05, len, 6), skin); seg.position.y = -len/2; pivot.add(seg);
-    if (handR) { const h = new THREE.Mesh(new THREE.IcosahedronGeometry(handR, 0), skin); h.position.y = -len - handR*0.4; pivot.add(h); }
-    if (foot) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.16), skin); f.position.set(0, -len, 0.025); pivot.add(f); }
+    // arms end in a soft mitten (wider at the end), legs in a rounded foot
+    const seg = new THREE.Mesh(capsule(len, r, handR || r * 1.15), skin); pivot.add(seg);
+    if (foot) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.078, 18, 12), skin); f.scale.set(1, 0.55, 1.4); f.position.set(0, -len + 0.012, 0.032); pivot.add(f); }
     body.add(pivot); return pivot;
   }
-  const legL = limb(0.32, 0.058, -0.075, 0.38, 0, true);
-  const legR = limb(0.32, 0.058,  0.075, 0.38, 0, true);
-  const armL = limb(0.29, 0.043, -0.165, 0.71, 0.055);
-  const armR = limb(0.29, 0.043,  0.165, 0.71, 0.055);
+  const legL = limb(0.38, 0.08, -0.08, 0.38, 0, true);
+  const legR = limb(0.38, 0.08,  0.08, 0.38, 0, true);
+  const armL = limb(0.3, 0.045, -0.15, 0.7, 0.058);
+  const armR = limb(0.3, 0.045,  0.15, 0.7, 0.058);
   armL.rotation.z = -0.14; armR.rotation.z = 0.14;
   // feet stand on y=0: leg pivot 0.38 - 0.32 - 0.035
   body.position.y = 0.035;
