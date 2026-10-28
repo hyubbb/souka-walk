@@ -1,6 +1,8 @@
 import type * as THREE from 'three';
 
 export type Zone = 'house' | 'alley';
+/** Outdoors: the alley, or Takeshiba through the ticket gate (same zone, different place). */
+export type Area = 'alley' | 'city';
 export type Pose = 'stand' | 'think' | 'sit' | 'lie' | 'ride';
 export type SubStyle = 'dialog' | 'movie';
 export type Frame = 'wide' | 'close';
@@ -55,6 +57,7 @@ export interface Spot {
 /** All mutable game state lives here so every module (and the React UI) reads the same values. */
 export interface State {
   zone: Zone;
+  area: Area;
   pose: Pose;
   expr: string;
   mouth: string;

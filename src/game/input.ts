@@ -37,11 +37,29 @@ export function setupInput(G: Game) {
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', onBlur);
 
+  // two fingers on the screen: pinch to zoom (like the mouse wheel)
+  const touches = new Map<number, { x: number; y: number }>();
+  let pinch = 0;
+  const pinchDist = () => { const [a, b] = [...touches.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  const zoom = (d: number) => {
+    if (S.editMode) G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + d * 2.4, 2, 40);
+    else S.camDist = THREE.MathUtils.clamp(S.camDist + d, G.minD(), G.maxD());
+  };
   canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) { pinch = pinchDist(); S.drag = null; if (S.editMode) G.edit.pointerUp(); return; }
+      if (touches.size > 2) return;
+    }
     stage.focus(); S.drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId);
     if (S.editMode) G.edit.pointerDown(e);
   });
+  const touchEnd = (e: PointerEvent) => { touches.delete(e.pointerId); if (touches.size < 2) pinch = 0; };
+  canvas.addEventListener('pointerup', touchEnd);
+  canvas.addEventListener('pointercancel', touchEnd);
   canvas.addEventListener('pointermove', (e: PointerEvent) => {
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch) { const d = pinchDist(); zoom((pinch - d) * 0.02); pinch = d; return; }
     if (S.editMode) { G.edit.pointerMove(e); return; }
     if (!S.drag) return;
     const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag = { x: e.clientX, y: e.clientY };

@@ -7,6 +7,7 @@ import { buildHouse } from './world/house';
 import { buildCharacter } from './character';
 import { setupInteract } from './interact';
 import { setupVehicles } from './vehicles';
+import { setupCity } from './world/city';
 import { setupProps } from './props';
 import { setupCapture } from './capture';
 import { setupModes } from './modes';
@@ -27,6 +28,7 @@ export function createGame(stage: HTMLElement): Game {
   setupInteract(G);
   setupProps(G);
   setupVehicles(G);
+  setupCity(G);
   setupCapture(G);
   setupModes(G);
   setupEdit(G);
@@ -35,7 +37,7 @@ export function createGame(stage: HTMLElement): Game {
   setupLoop(G);
 
   G.edit.loadLayout();
-  G.props.defaultsReady.then(() => G.props.settle());
+  G.props.defaultsReady.then(() => { G.props.settle(); G.city.settle(); });
   G.applyTime(0);
   G.setPose('stand');
   G.setQuality(2);

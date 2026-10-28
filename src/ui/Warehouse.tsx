@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useGame } from './useGame';
-import { CATALOG, CATS, type CatKey } from '../game/catalog';
+import { CATS, type CatKey } from '../game/catalog';
+import { AVAILABLE as CATALOG } from '../game/props';
 import type { EditObj } from '../game/types';
 
 type Tab = CatKey | 'box';

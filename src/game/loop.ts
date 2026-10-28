@@ -44,12 +44,21 @@ export function setupLoop(G: Game) {
       const maxSp = keys['shift'] ? 4.4 : 2.1;
       S.speedNow = S.speedNow < maxSp ? Math.min(maxSp, S.speedNow + dt * 8) : Math.max(maxSp, S.speedNow - dt * 6);
       const nx = char.position.x + dx * S.speedNow * dt, nz = char.position.z + dz * S.speedNow * dt;
-      if (!collide(nx, char.position.z)) char.position.x = nx;
-      if (!collide(char.position.x, nz)) char.position.z = nz;
-      if (S.zone === 'alley') {
+      const p = char.position;
+      if (S.zone === 'alley' && S.area === 'city') {
+        // Takeshiba: walls, kerbs and stairs from the map's triangles (try each axis so souka slides along walls)
+        let gy = collide(nx, p.z) ? null : G.city.moveTo(p.x, p.y, p.z, nx, p.z);
+        if (gy !== null) { p.x = nx; p.y = gy; }
+        gy = collide(p.x, nz) ? null : G.city.moveTo(p.x, p.y, p.z, p.x, nz);
+        if (gy !== null) { p.z = nz; p.y = gy; }
+      } else {
+        if (!collide(nx, p.z)) p.x = nx;
+        if (!collide(p.x, nz)) p.z = nz;
+      }
+      if (S.zone === 'alley' && S.area !== 'city') {
         char.position.x = THREE.MathUtils.clamp(char.position.x, -21, 21);
         char.position.z = THREE.MathUtils.clamp(char.position.z, -52.5, 13.5);
-      } else {
+      } else if (S.zone === 'house') {
         char.position.x = THREE.MathUtils.clamp(char.position.x, HX - 2.2, HX + 14.8);
         char.position.z = THREE.MathUtils.clamp(char.position.z, 0.2, 14.3);
       }
@@ -80,7 +89,7 @@ export function setupLoop(G: Game) {
     const [hh, mm] = S.clockBase.split(':').map(Number);
     const mins = hh * 60 + mm + Math.floor(performance.now() / 4000);
     const clockTxt = `10/28 (水) ${String(Math.floor(mins / 60) % 24).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-    let room = '골목 ALLEY';
+    let room = S.area === 'city' ? '타케시바 TAKESHIBA' : '골목 ALLEY';
     if (S.zone === 'house') {
       const lx = char.position.x - HX, lz = char.position.z;
       const r = G.ROOMS.find((o: any) => lx >= o.r[0] && lx <= o.r[1] && lz >= o.r[2] && lz <= o.r[3]);
@@ -105,7 +114,7 @@ export function setupLoop(G: Game) {
       if (!S.drag) { let d = char.rotation.y - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); S.camYaw += d * Math.min(1, dt * 3); }
     }
     let dist = S.riding && S.riding.type === 'car' ? Math.max(S.camDist, 7) : THREE.MathUtils.clamp(S.camDist, G.minD(), G.maxD());
-    const target = tmpV.set(char.position.x, (S.riding ? 0.9 : S.pose === 'lie' ? 0.35 : S.pose === 'sit' ? 0.6 : 0.78), char.position.z);
+    const target = tmpV.set(char.position.x, char.position.y + (S.riding ? 0.9 : S.pose === 'lie' ? 0.35 : S.pose === 'sit' ? 0.6 : 0.78), char.position.z);
     if (S.photo) target.add(pan);
     if (S.editMode) { target.copy(G.edit.pivot); pitch = G.edit.pitch; dist = G.edit.dist; }
     let cx = target.x + Math.sin(S.camYaw) * Math.cos(pitch) * dist;
@@ -124,7 +133,12 @@ export function setupLoop(G: Game) {
         else for (const h of hits) if (h.object.visible) { h.object.visible = false; hiddenOcc.push(h.object); }
       }
     }
-    cy = Math.max(cy, 0.15);
+    if (S.zone === 'alley' && S.area === 'city' && !S.editMode) {
+      // the city's buildings are one big mesh each, so pull the camera in front of them instead of hiding them
+      const cam = new THREE.Vector3(cx, cy, cz), f = G.city.hitFrac(target, cam);
+      if (f < 1) { const d = Math.max(0.6, f * target.distanceTo(cam) - 0.3) / target.distanceTo(cam); cx = target.x + (cx - target.x) * d; cy = target.y + (cy - target.y) * d; cz = target.z + (cz - target.z) * d; }
+    }
+    cy = Math.max(cy, char.position.y + 0.15);
     camera.position.set(cx, cy, cz);
     camera.lookAt(target);
     if (S.zone === 'house') hideBlockingWalls(target);
@@ -146,8 +160,8 @@ export function setupLoop(G: Game) {
     }
 
     G.applyPose(dt);
-    G.sun.position.set(char.position.x - 6, 14, char.position.z + 8); G.sun.target.position.set(char.position.x, 0, char.position.z);
-    G.blob.position.x = char.position.x; G.blob.position.z = char.position.z;
+    G.sun.position.set(char.position.x - 6, char.position.y + 14, char.position.z + 8); G.sun.target.position.set(char.position.x, char.position.y, char.position.z);
+    G.blob.position.set(char.position.x, char.position.y + 0.012, char.position.z);
     G.blob.visible = !(S.riding && S.riding.type === 'car');
     updateCamera(dt);
 

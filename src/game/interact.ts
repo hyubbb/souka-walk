@@ -49,6 +49,7 @@ export function setupInteract(G: Game) {
       if (d < 1.0 && d < bd + 0.2) { bd = d; best = { label: h.name + ' 들기', hold: h }; }
     }
     if (S.zone === 'alley' && G.vehicles) for (const v of G.vehicles) {
+      if (!G.vehicleLive(v)) continue;
       const d = Math.hypot(char.position.x - v.g.position.x, char.position.z - v.g.position.z);
       if (d < v.grab && d < bd + 0.3) { bd = d; best = { label: v.type === 'car' ? '차에 타기' : '자전거 타기', veh: v }; }
     }
@@ -69,6 +70,7 @@ export function setupInteract(G: Game) {
       scene.traverse((o: any) => {
         if (!o.isMesh || !o.material || o.material.transparent) return;
         if (G.wallGroups.some((w: THREE.Object3D) => isDesc(o, w))) return;
+        if (G.city && isDesc(o, G.city.root)) return;   // the city map has its own ground lookup
         if (o.geometry.type === 'PlaneGeometry' && Math.abs(o.rotation.x + Math.PI / 2) > 0.01) return; // posters etc.
         surfaceList!.push(o);
       });
@@ -84,7 +86,8 @@ export function setupInteract(G: Game) {
       if (!vis) continue;
       return Math.max(0, hit.point.y);
     }
-    return 0;
+    const gy = G.city && G.city.groundAt(x, z, fromY);
+    return gy ?? 0;
   }
   function dropPoint(): [number, number, number] {
     const fx = char.position.x + Math.sin(char.rotation.y) * S.reach, fz = char.position.z + Math.cos(char.rotation.y) * S.reach;
@@ -126,7 +129,7 @@ export function setupInteract(G: Game) {
     G.setUi({ fading: true });
     setTimeout(() => {
       S.zone = z; S.seat = null; S.seatY = 0; G.setPose('stand');
-      if (z === 'alley') { char.position.set(0, 0, 8.4); char.rotation.y = Math.PI; S.camYaw = 0; S.camDist = 5.6; if (!S.taskDone) G.setUi({ task: '할 일: 편의점에서 캔커피' }); }
+      if (z === 'alley') { S.area = 'alley'; char.position.set(0, 0, 8.4); char.rotation.y = Math.PI; S.camYaw = 0; S.camDist = 5.6; if (!S.taskDone) G.setUi({ task: '할 일: 편의점에서 캔커피' }); }
       else { char.position.set(HX + 13.2, 0, 13.4); char.rotation.y = Math.PI; S.camYaw = 0.75; S.camDist = 6.4; }
       for (const g of G.wallGroups) g.visible = true;
       G.applyTime(S.timeIdx);

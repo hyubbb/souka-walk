@@ -15,7 +15,7 @@ body {
 .wrap { display: flex; gap: 20px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
 
 .stage { position: relative; background: var(--screen); line-height: 0; flex: 0 0 auto; max-width: 100%; outline: none; }
-.stage canvas { display: block; cursor: grab; touch-action: none; }
+.stage canvas { display: block; cursor: grab; touch-action: none; max-width: calc(100vw - 32px); }
 .stage canvas:active { cursor: grabbing; }
 .stage canvas.retro { image-rendering: pixelated; image-rendering: crisp-edges; }
 .stage canvas.comp { cursor: default; }
@@ -64,6 +64,17 @@ input[type=text] { font-family: var(--f-pixel); font-size: 14px; padding: 6px 8p
 .modal-in { background: var(--paper); border: 3px solid var(--ink); padding: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 100%; max-width: 100%; }
 .modal img, .modal video { max-height: 70vh; max-width: 100%; width: auto; display: block; border: 2px solid var(--ink); background: #000; }
 .modal p { margin: 0; font-size: 12px; color: var(--ink-soft); max-width: 44ch; line-height: 1.5; }
+/* touch controls (phones / tablets) */
+.touch { position: absolute; inset: 0; pointer-events: none; line-height: 1.2; user-select: none; -webkit-user-select: none; }
+.tstick { position: absolute; left: 14px; bottom: 14px; width: 112px; height: 112px; border-radius: 50%; pointer-events: auto; touch-action: none;
+  background: #ffffff22; border: 2px solid #ffffff88; display: grid; place-items: center; }
+.tknob { width: 48px; height: 48px; border-radius: 50%; background: #f4f2eacc; border: 2px solid var(--ink); }
+.tbtns { position: absolute; right: 14px; bottom: 18px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.tbtn { pointer-events: auto; touch-action: none; font: 14px/1 var(--f-pixel); color: var(--ink); background: #f4f2eae6;
+  border: 2px solid var(--ink); border-radius: 22px; padding: 10px 14px; min-width: 56px; min-height: 44px; }
+.tbtn.big { width: 72px; height: 72px; border-radius: 50%; font-size: 16px; padding: 0; }
+.tbtn:active { background: #d9d6c8; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; }

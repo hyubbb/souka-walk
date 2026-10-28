@@ -76,6 +76,21 @@ export function setupVehicles(G: Game) {
       size:[0.5, 1.4], grab:1.3, exit:0.65, seatY:0.74, lamps:[lamp], tails:[], lampOn, lampOff, spot, beam:bm };
     vehicles.push(v); return v;
   }
+  /** A car model from the warehouse (pack3): no moving parts, but it drives, steers and has headlights. */
+  function addModelCar(o) {
+    const g = o.g, sc = g.scale.x, w = o.size.w, d = o.size.d;
+    const spot = headlight(g, 0, 0.7 / sc, d / 2, 18, 2.2);
+    const bm = beam(g, 3.2 / sc, 7 / sc, d / 2);
+    const r = w * sc * 0.5;
+    const v = { type:'car', name:o.label, g, o, heading:g.rotation.y, speed:0, steer:0, lights:false, wheels:[], fronts:[], wheelR:0.3,
+      spec:{ max:8.5, rev:-2.8, acc:5, brake:9, turn:1.2 }, circles:[[0, -d*sc*0.32, r], [0, 0, r], [0, d*sc*0.32, r]],
+      size:[w*sc, d*sc], grab:d*sc*0.5 + 0.7, exit:w*sc*0.5 + 0.5, seatY:0, lamps:[], tails:[], lampOn:null, lampOff:null, spot, beam:bm };
+    vehicles.push(v); return v;
+  }
+  /** Parked outdoors and not put away (warehouse cars can also sit in the house as decoration). */
+  const vehicleLive = (v) => !v.o || (!v.o.hidden && v.g.parent === scene);
+  const inCity = () => S.area === 'city';
+
   const myCar = makeCar(-1.55, 5.6, Math.PI);   // parked nose toward the alley (-z)
   const myBike = makeBike(2.3, 10.6, Math.PI - 0.2);
 
@@ -84,7 +99,15 @@ export function setupVehicles(G: Game) {
     const hx = (c*v.size[0] + s*v.size[1]) / 2, hz = (s*v.size[0] + c*v.size[1]) / 2;
     return { minX:v.g.position.x-hx, maxX:v.g.position.x+hx, minZ:v.g.position.z-hz, maxZ:v.g.position.z+hz, veh:v };
   }
-  function refreshDynCols() { dynCols.length = 0; for (const v of vehicles) if (v !== S.riding) dynCols.push(vehFootprint(v)); }
+  function refreshDynCols() {
+    for (let i = vehicles.length - 1; i >= 0; i--) if (vehicles[i].o && !vehicles[i].g.parent && vehicles[i] !== S.riding) vehicles.splice(i, 1);  // put away
+    dynCols.length = 0;
+    for (const v of vehicles) {
+      if (!vehicleLive(v) || v === S.riding) continue;
+      if (v.o) v.heading = v.g.rotation.y;   // it may have been turned in edit mode
+      dynCols.push(vehFootprint(v));
+    }
+  }
   function vehBlocked(v, x, z, h) {
     const sn = Math.sin(h), cs = Math.cos(h);
     for (const [ox, oz, r] of v.circles) {
@@ -94,7 +117,7 @@ export function setupVehicles(G: Game) {
         const qx = Math.max(c.minX, Math.min(px, c.maxX)), qz = Math.max(c.minZ, Math.min(pz, c.maxZ));
         if ((px-qx)*(px-qx) + (pz-qz)*(pz-qz) < r*r) return true;
       }
-      if (px < -21 || px > 21 || pz < -52.8 || pz > 13.6) return true;
+      if (!inCity() && (px < -21 || px > 21 || pz < -52.8 || pz > 13.6)) return true;
     }
     return false;
   }
@@ -117,7 +140,13 @@ export function setupVehicles(G: Game) {
     const tries = [[-cs*v.exit, sn*v.exit], [cs*v.exit, -sn*v.exit], [-sn*(v.size[1]/2+0.5), -cs*(v.size[1]/2+0.5)]]; // right, left, behind
     S.riding = null; refreshDynCols();
     let placed = false;
-    for (const [dx, dz] of tries) { const nx = v.g.position.x + dx, nz = v.g.position.z + dz; if (!collide(nx, nz)) { char.position.set(nx, 0, nz); placed = true; break; } }
+    for (const [dx, dz] of tries) {
+      const nx = v.g.position.x + dx, nz = v.g.position.z + dz;
+      if (collide(nx, nz)) continue;
+      let ny = 0;
+      if (inCity()) { const gy = G.city.groundAt(nx, nz, v.g.position.y + 0.6); if (gy === null || Math.abs(gy - v.g.position.y) > 0.6) continue; ny = gy; }
+      char.position.set(nx, ny, nz); placed = true; break;
+    }
     if (!placed) { S.riding = v; toast('내릴 자리가 없어.'); return; }
     v.speed = 0; char.visible = true; char.rotation.y = h; S.seatY = 0; setPose('stand');
   }
@@ -132,8 +161,14 @@ export function setupVehicles(G: Game) {
     v.steer += (steerIn - v.steer) * Math.min(1, dt * 6);
     const nh = v.heading + v.steer * sp.turn * dt * THREE.MathUtils.clamp(v.speed / 2.5, -1, 1);
     const nx = v.g.position.x + Math.sin(nh) * v.speed * dt, nz = v.g.position.z + Math.cos(nh) * v.speed * dt;
-    if (vehBlocked(v, nx, nz, nh)) { v.speed *= -0.15; }
-    else { v.g.position.x = nx; v.g.position.z = nz; v.heading = nh; }
+    let ny = v.g.position.y, ok = true;
+    if (inCity()) {
+      // the city map: walls and kerbs come from its triangle grid, and the car follows the ground
+      const gy = G.city.moveTo(v.g.position.x, v.g.position.y, v.g.position.z, nx, nz, v.size[1] / 2 + 0.2);
+      if (gy === null) ok = Math.abs(v.speed) < 0.01; else ny = gy;
+    }
+    if (!ok || vehBlocked(v, nx, nz, nh)) { v.speed *= -0.15; }
+    else { v.g.position.x = nx; v.g.position.z = nz; v.g.position.y = ny; v.heading = nh; }
     v.g.rotation.y = v.heading;
     for (const w of v.wheels) w.rotation.x += v.speed * dt / v.wheelR;
     for (const f of v.fronts) f.rotation.y = v.steer * 0.45;
@@ -141,14 +176,14 @@ export function setupVehicles(G: Game) {
     if (v.type === 'car' && v.tails.length) { const braking = thr < 0 && v.speed > 0.2; for (const t of v.tails) t.material = (braking || v.lights) ? v.tailOn : v.tailOff; }
     // rider + camera follow
     if (v.type === 'bike') {
-      char.position.set(v.g.position.x - Math.sin(v.heading) * 0.3, 0, v.g.position.z - Math.cos(v.heading) * 0.3);
+      char.position.set(v.g.position.x - Math.sin(v.heading) * 0.3, v.g.position.y, v.g.position.z - Math.cos(v.heading) * 0.3);
       char.rotation.y = v.heading; S.walkPhase += dt * v.speed * 3.2;
-    } else { char.position.set(v.g.position.x, 0, v.g.position.z); char.rotation.y = v.heading; }
+    } else { char.position.set(v.g.position.x, v.g.position.y, v.g.position.z); char.rotation.y = v.heading; }
     if (Math.abs(v.speed) > 0.5 && !S.drag && !S.reels) {
       const want = v.heading + (v.speed > 0 ? Math.PI : Math.PI);
       let d = want - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); S.camYaw += d * Math.min(1, dt * 2.2);
     }
   }
 
-  Object.assign(G, { vehicles, myCar, myBike, refreshDynCols, mount, dismount, setLights, updateRide });
+  Object.assign(G, { vehicles, myCar, myBike, refreshDynCols, mount, dismount, setLights, updateRide, addModelCar, vehicleLive });
 }
