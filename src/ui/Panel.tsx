@@ -6,6 +6,8 @@ import { FRAMES, SUB_STYLES } from '../game/modes';
 import { QUALITY } from '../game/quality';
 import { Warehouse } from './Warehouse';
 
+const SIZES = [{ s: 0.6, label: '꼬마' }, { s: 0.8, label: '작게' }, { s: 1, label: '보통' }, { s: 1.25, label: '크게' }, { s: 1.6, label: '거인' }] as const;
+
 function Choices<T>({ items, isOn, onPick, label }: { items: readonly T[]; isOn: (it: T, i: number) => boolean; onPick: (it: T, i: number) => void; label: (it: T, i: number) => string }) {
   return (
     <div className="row">
@@ -142,6 +144,8 @@ export function Panel() {
       <section className="box">
         <h2>꾸미기</h2>
         <Choices items={ACC} isOn={(a) => S.acc[a.key]} onPick={(a) => G.toggleAcc(a.key)} label={(a) => a.label} />
+        <h3 className="sub">크기</h3>
+        <Choices items={SIZES} isOn={(z) => Math.abs(S.size - z.s) < 0.01} onPick={(z) => G.setSize(z.s)} label={(z) => z.label} />
       </section>
 
       <section className="box">

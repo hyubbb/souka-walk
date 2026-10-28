@@ -116,13 +116,21 @@ export function buildCharacter(G: Game) {
   }
   function setPose(k: Pose) { S.pose = k; G.notify(); }
   function toggleAcc(k: 'blush' | 'hat' | 'phones') { S.acc[k] = !S.acc[k]; applyAcc(); }
+  /** souka's size; the car sets its own while you drive. */
+  function setSize(s: number) {
+    S.size = s; if (!(S.riding && S.riding.type === 'car')) char.scale.setScalar(s);
+    try { localStorage.setItem('souka-size', String(s)); } catch { /* private mode */ }
+    G.notify();
+  }
+  try { const v = Number(localStorage.getItem('souka-size')); if (v > 0.3 && v < 3) { S.size = v; char.scale.setScalar(v); } } catch { /* ignore */ }
 
   /** Set the limbs for the current pose; called every frame. */
   function applyPose(dt: number) {
     body.rotation.set(0, 0, 0); body.position.set(0, 0.035, 0); headGroup.rotation.set(0, 0, 0);
     legL.rotation.set(0, 0, 0); legR.rotation.set(0, 0, 0);
     armL.rotation.set(0, 0, -0.14); armR.rotation.set(0, 0, 0.14);
-    const { pose, walkPhase, speedNow, seatY } = S;
+    const { pose, walkPhase, speedNow } = S;
+    const seatY = S.seatY / (char.scale.x || 1);
     if (pose === 'stand') {
       const walk = Math.min(1, speedNow / 2);
       const s = Math.sin(walkPhase) * walk;
@@ -152,6 +160,11 @@ export function buildCharacter(G: Game) {
       legL.rotation.x = -1.05 + s * 0.45; legR.rotation.x = -1.05 - s * 0.45;
       armL.rotation.set(-1.2, 0, 0.12); armR.rotation.set(-1.2, 0, -0.12);
       body.rotation.x = 0.12; headGroup.rotation.x = -0.05;
+    } else if (pose === 'drive') {   // in the driver's seat, hands on the wheel
+      body.position.y = seatY - 0.33;
+      legL.rotation.x = legR.rotation.x = -1.45;
+      armL.rotation.set(-1.15, 0, -0.12); armR.rotation.set(-1.15, 0, 0.12);
+      headGroup.rotation.x = 0.04; headGroup.rotation.z = Math.sin(S.walkPhase * 0.3) * 0.03;
     } else if (pose === 'lie') {
       body.rotation.x = Math.PI / 2 - 0.05; body.position.set(0, 0.19 + seatY, -0.6);
       armL.rotation.set(0, 0, -0.25); armR.rotation.set(0, 0, 0.25);
@@ -159,5 +172,5 @@ export function buildCharacter(G: Game) {
     }
   }
 
-  Object.assign(G, { char, body, headGroup, blob, eyeTexL, eyeTexR, mouthTexes, setExpr, setMouth, setPose, applyAcc, toggleAcc, applyPose });
+  Object.assign(G, { setSize, char, body, headGroup, blob, eyeTexL, eyeTexR, mouthTexes, setExpr, setMouth, setPose, applyAcc, toggleAcc, applyPose });
 }

@@ -3,7 +3,7 @@ import type * as THREE from 'three';
 export type Zone = 'house' | 'alley';
 /** Outdoors: the alley, or Takeshiba through the ticket gate (same zone, different place). */
 export type Area = 'alley' | 'city';
-export type Pose = 'stand' | 'think' | 'sit' | 'lie' | 'ride';
+export type Pose = 'stand' | 'think' | 'sit' | 'lie' | 'ride' | 'drive';
 export type SubStyle = 'dialog' | 'movie';
 export type Frame = 'wide' | 'close';
 
@@ -58,6 +58,8 @@ export interface Spot {
 export interface State {
   zone: Zone;
   area: Area;
+  /** souka's size (1 = normal), set in the panel and remembered in the browser. */
+  size: number;
   pose: Pose;
   expr: string;
   mouth: string;

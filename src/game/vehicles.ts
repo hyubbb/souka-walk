@@ -22,6 +22,7 @@ export function setupVehicles(G: Game) {
   }
   function wheel(r, w, mat) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w, 8), mat); m.rotation.z = Math.PI/2; const g = new THREE.Group(); g.add(m); return g; }
 
+  const hidden = new THREE.MeshBasicMaterial({ visible: false });
   function makeCar(x, z, rot) {
     const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
     const paint = lam({ color:0xa7c3c4 }), trim = lam({ color:0x3a3c3e }), tyre = lam({ color:0x222222 });
@@ -29,8 +30,11 @@ export function setupVehicles(G: Game) {
     const shieldTex = canvasTex(32, 16, (c) => { c.fillStyle='#a7c3c4'; c.fillRect(0,0,32,16); c.fillStyle='#3f4e60'; c.fillRect(2,2,28,12); c.fillStyle='#6d8296'; c.fillRect(4,3,10,2); });
     const win = lam({ map:winTex }), shield = lam({ map:shieldTex });
     const body = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.58, 2.9), paint); body.position.y = 0.6; g.add(body);
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.62, 2.0), [win, win, paint, paint, shield, shield]); cabin.position.set(0, 1.2, -0.25); g.add(cabin);
+    const cabinMats = [win, win, paint, paint, shield, shield];
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.62, 2.0), cabinMats); cabin.position.set(0, 1.2, -0.25); g.add(cabin);
     const roof = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 2.04), paint); roof.position.set(0, 1.53, -0.25); g.add(roof);
+    // while driving the roof slides open so you can see souka at the wheel
+    const openTop = (open) => { roof.visible = !open; cabin.material = open ? [win, win, hidden, paint, shield, shield] : cabinMats; };
     for (const zz of [1.47, -1.47]) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.16, 0.1), trim); b.position.set(0, 0.38, zz); g.add(b); }
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.02), lam({ color:0xf0eee4 })); plate.position.set(0, 0.55, 1.46); g.add(plate);
     const lampOff = new THREE.MeshBasicMaterial({ color:0xb9b8ae }), lampOn = new THREE.MeshBasicMaterial({ color:0xfff6cf });
@@ -47,7 +51,8 @@ export function setupVehicles(G: Game) {
     }
     const spot = headlight(g, 0, 0.75, 1.5, 18, 2.2);
     const bm = beam(g, 3.2, 7, 1.5);
-    const v = { type:'car', name:'차', g, heading:rot, speed:0, steer:0, lights:false, wheels, fronts, wheelR:0.27,
+    const glass = [win, shield];
+    const v = { type:'car', name:'차', g, glass, openTop, seat:{ x:-0.3, z:-0.15, y:0.45, k:1 }, heading:rot, speed:0, steer:0, lights:false, wheels, fronts, wheelR:0.27,
       spec:{ max:7.5, rev:-2.8, acc:4.5, brake:9, turn:1.25 }, circles:[[0,-1.0,0.78],[0,0,0.78],[0,1.0,0.78]],
       size:[1.5, 3.0], grab:2.1, exit:1.25, seatY:0, lamps, tails, lampOn, lampOff, tailOn, tailOff, spot, beam:bm };
     vehicles.push(v); return v;
@@ -82,7 +87,12 @@ export function setupVehicles(G: Game) {
     const spot = headlight(g, 0, 0.7 / sc, d / 2, 18, 2.2);
     const bm = beam(g, 3.2 / sc, 7 / sc, d / 2);
     const r = w * sc * 0.5;
-    const v = { type:'car', name:o.label, g, o, heading:g.rotation.y, speed:0, steer:0, lights:false, wheels:[], fronts:[], wheelR:0.3,
+    // the driver sits on the right (Japanese cars). These cars are closed, so souka (a bit smaller) pops
+    // its head out of the sunroof: head centre at roof height.
+    const H = o.size.h * sc, k = 0.78, seatY = Math.max(0.1, H + 0.12 - 0.77 * k);   // world height of the hips
+    const glass: THREE.Material[] = [];
+    g.traverse((m: any) => { if (m.isMesh && m.material.transparent && !glass.includes(m.material)) glass.push(m.material); });
+    const v = { type:'car', name:o.label, g, o, glass, seat:{ x:-w * 0.2, z:-d * 0.05, y:seatY, k }, heading:g.rotation.y, speed:0, steer:0, lights:false, wheels:[], fronts:[], wheelR:0.3,
       spec:{ max:8.5, rev:-2.8, acc:5, brake:9, turn:1.2 }, circles:[[0, -d*sc*0.32, r], [0, 0, r], [0, d*sc*0.32, r]],
       size:[w*sc, d*sc], grab:d*sc*0.5 + 0.7, exit:w*sc*0.5 + 0.5, seatY:0, lamps:[], tails:[], lampOn:null, lampOff:null, spot, beam:bm };
     vehicles.push(v); return v;
@@ -129,8 +139,12 @@ export function setupVehicles(G: Game) {
   }
   function mount(v) {
     S.riding = v; v.speed = 0; S.seat = null; S.speedNow = 0;
-    if (v.type === 'car') { char.visible = false; setPose('stand'); }
-    else { S.seatY = v.seatY; setPose('ride'); }
+    if (v.type === 'car') {
+      // souka stays visible in the driver's seat; the windows turn see-through while you drive
+      char.scale.setScalar(v.seat.k); S.seatY = v.seat.y; setPose('drive'); if (v.openTop) v.openTop(true);
+      for (const m of v.glass || []) { m.userData.op ??= { t: m.transparent, o: m.opacity }; m.transparent = true; m.opacity = 0.3; m.needsUpdate = true; }
+      placeRider(v);
+    } else { S.seatY = v.seatY; setPose('ride'); }
     toast(v.type === 'car' ? '차에 탔다. 부릉.' : '자전거에 탔다.');
   }
   function dismount() {
@@ -148,7 +162,15 @@ export function setupVehicles(G: Game) {
       char.position.set(nx, ny, nz); placed = true; break;
     }
     if (!placed) { S.riding = v; toast('내릴 자리가 없어.'); return; }
-    v.speed = 0; char.visible = true; char.rotation.y = h; S.seatY = 0; setPose('stand');
+    if (v.openTop) v.openTop(false);
+    v.speed = 0; char.visible = true; char.scale.setScalar(S.size || 1); char.rotation.y = h; S.seatY = 0; setPose('stand');
+    for (const m of v.glass || []) if (m.userData.op) { m.transparent = m.userData.op.t; m.opacity = m.userData.op.o; m.needsUpdate = true; }
+  }
+  /** Put souka in the driver's seat (car-local offset, turned with the car). */
+  function placeRider(v) {
+    const s = v.seat, sc = v.g.scale.x || 1, sn = Math.sin(v.heading), cs = Math.cos(v.heading);
+    char.position.set(v.g.position.x + (s.x * cs + s.z * sn) * sc, v.g.position.y, v.g.position.z + (-s.x * sn + s.z * cs) * sc);
+    char.rotation.y = v.heading;
   }
   function updateRide(dt) {
     const v = S.riding, sp = v.spec;
@@ -178,7 +200,7 @@ export function setupVehicles(G: Game) {
     if (v.type === 'bike') {
       char.position.set(v.g.position.x - Math.sin(v.heading) * 0.3, v.g.position.y, v.g.position.z - Math.cos(v.heading) * 0.3);
       char.rotation.y = v.heading; S.walkPhase += dt * v.speed * 3.2;
-    } else { char.position.set(v.g.position.x, v.g.position.y, v.g.position.z); char.rotation.y = v.heading; }
+    } else placeRider(v);
     if (Math.abs(v.speed) > 0.5 && !S.drag && !S.reels) {
       const want = v.heading + (v.speed > 0 ? Math.PI : Math.PI);
       let d = want - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); S.camYaw += d * Math.min(1, dt * 2.2);
