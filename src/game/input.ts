@@ -24,7 +24,7 @@ export function setupInput(G: Game) {
     if (!S.photo && k === 'c') G.interact();
     if (!S.photo && k === 'l' && S.riding) { G.setLights(S.riding, !S.riding.lights); G.toast(S.riding.lights ? '라이트 ON' : '라이트 OFF'); }
     if (S.photo) {
-      if (k >= '1' && k <= '6') G.setExpr(EXPR[+k - 1].key);
+      if (k >= '1' && k <= String(EXPR.length)) G.setExpr(EXPR[+k - 1].key);
       if (k === 'f') G.setPose(POSES[(POSES.findIndex((p) => p.key === S.pose) + 1) % POSES.length].key);
       if (k === 't') G.applyTime((S.timeIdx + 1) % TIMES.length);
       if (k === 'g') G.toggleGuide();

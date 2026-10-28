@@ -67,7 +67,7 @@ export function Panel() {
           <dl className="keys">
             <dt>드래그 · 휠</dt><dd>각도 · 거리 (바닥에서 올려다보기까지)</dd>
             <dt><K>WASD</K> <K>R</K></dt><dd>카메라 시점 이동 · 위로</dd>
-            <dt><K>1</K>–<K>6</K> <K>F</K> <K>T</K></dt><dd>표정 · 포즈 · 시간대</dd>
+            <dt><K>1</K>–<K>7</K> <K>F</K> <K>T</K></dt><dd>표정 · 포즈 · 시간대</dd>
             <dt><K>G</K> <K>Space</K></dt><dd>자막 가이드 · 찍기</dd>
           </dl>
           <h2>구도</h2>
