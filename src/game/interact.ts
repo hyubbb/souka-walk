@@ -12,14 +12,8 @@ export function setupInteract(G: Game) {
   const SPOTS: Spot[] = [
     { zone: 'alley', obj: '벤치', at: [2.3, -30], label: '벤치에 앉기', seat: { y: 0.43, rot: -Math.PI / 2, pose: 'sit', exit: [1.5, -30] } },
     { zone: 'alley', at: [0, 13.1], label: '집에 들어가기', act: () => goZone('house') },
-    { zone: 'house', obj: '침대', at: L(2.95, 1.2), r: 1.6, label: '침대에 눕기', seat: { y: 0.5, rot: Math.PI, pose: 'lie', exit: L(4.6, 2.2) } },
-    { zone: 'house', obj: '소파', at: L(2.7, 6.95), r: 1.4, label: '소파에 앉기', seat: { y: 0.4, rot: 0, pose: 'sit', exit: L(2.7, 7.9) } },
-    { zone: 'house', obj: '작업 의자', at: L(11.0, 1.6), label: '책상 앞에 앉기', seat: { y: 0.46, rot: Math.PI, pose: 'sit', exit: L(11.0, 2.55) } },
-    { zone: 'house', obj: '식탁 의자', at: L(10.7, 7.85), label: '식탁에 앉기', seat: { y: 0.41, rot: 0, pose: 'sit', exit: L(9.5, 7.9) } },
-    { zone: 'house', obj: '식탁 의자 2', at: L(10.7, 9.75), label: '식탁에 앉기', seat: { y: 0.41, rot: Math.PI, pose: 'sit', exit: L(10.7, 10.6) } },
     { zone: 'house', at: L(13.2, 13.7), label: '출근하기', act: () => goZone('alley') },
     { zone: 'house', obj: '체중계', at: L(10.0, 12.85), r: 0.8, label: '체중계에 올라가기', seat: { y: 0.09, rot: Math.PI, pose: 'stand', msg: '……3.2kg' } },
-    { zone: 'house', obj: '택배 상자', at: L(12.25, 11.95), r: 1.25, label: '상자에 들어가기', seat: { y: 0.05, rot: 0, pose: 'sit', exit: L(13.4, 12.1) } },
   ];
   // spots follow their furniture when it is moved in edit mode: store them relative to the object
   for (const sp of SPOTS) {
@@ -31,8 +25,8 @@ export function setupInteract(G: Game) {
   }
   function resolveSpot(sp: Spot) {
     if (!sp.o) return;
-    const o = sp.o, r = o.g.rotation.y, cs = Math.cos(r), sn = Math.sin(r), bx = o.off + o.g.position.x, bz = o.g.position.z;
-    const tr = (l: [number, number]): [number, number] => [bx + l[0] * cs + l[1] * sn, bz - l[0] * sn + l[1] * cs];
+    const o = sp.o, r = o.g.rotation.y, cs = Math.cos(r), sn = Math.sin(r), bx = o.off + o.g.position.x, bz = o.g.position.z, sc = o.g.scale.x;
+    const tr = (l: [number, number]): [number, number] => [bx + (l[0] * cs + l[1] * sn) * sc, bz + (-l[0] * sn + l[1] * cs) * sc];
     sp.at = tr(sp.l!);
     if (sp.seat) { sp.seat.rot = sp.seat.rl! + r; if (sp.seat.el) sp.seat.exit = tr(sp.seat.el); }
   }
@@ -48,7 +42,7 @@ export function setupInteract(G: Game) {
     for (const sp of SPOTS) {
       if (sp.zone !== S.zone) continue; resolveSpot(sp); if (sp.o && sp.o.hidden) continue;
       const d = Math.hypot(char.position.x - sp.at[0], char.position.z - sp.at[1]);
-      if (d < (sp.r || 1.2) && d < bd) { bd = d; best = sp; }
+      if (d < (sp.r || 1.2) * (sp.o ? Math.max(1, sp.o.g.scale.x) : 1) && d < bd) { bd = d; best = sp; }
     }
     if (!S.held) for (const h of G.holdables as Holdable[]) {
       h.obj.getWorldPosition(tmpHP); const d = Math.hypot(char.position.x - tmpHP.x, char.position.z - tmpHP.z);
@@ -81,8 +75,9 @@ export function setupInteract(G: Game) {
     }
     return surfaceList;
   }
-  function surfaceY(x: number, z: number, exclude?: THREE.Object3D | null) {
-    downRay.set(new THREE.Vector3(x, 3.2, z), DOWN); downRay.far = 4;
+  /** Height of the first surface below `fromY` at (x, z). */
+  function surfaceY(x: number, z: number, exclude?: THREE.Object3D | null, fromY = 3.2) {
+    downRay.set(new THREE.Vector3(x, fromY, z), DOWN); downRay.far = fromY + 0.8;
     for (const hit of downRay.intersectObjects(surfaces(), false)) {
       if (isDesc(hit.object, char) || (exclude && isDesc(hit.object, exclude))) continue;
       let vis = true; for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) if (!o.visible) { vis = false; break; }
@@ -118,7 +113,7 @@ export function setupInteract(G: Game) {
     if (sp && sp.veh) { G.mount(sp.veh); return; }
     if (sp && sp.act) { sp.act(); return; }
     if (sp && sp.seat) {
-      S.seat = sp.seat; S.seatY = sp.seat.y;
+      S.seat = sp.seat; S.seatY = sp.seat.auto ? surfaceY(sp.at[0], sp.at[1]) : sp.seat.y;
       char.position.set(sp.at[0], 0, sp.at[1]); char.rotation.y = sp.seat.rot; G.setPose(sp.seat.pose);
       if (sp.seat.msg) setTimeout(() => toast(sp.seat.msg), 500);
       return;

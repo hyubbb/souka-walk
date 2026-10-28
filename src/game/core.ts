@@ -97,11 +97,12 @@ export function createCore(stage: HTMLElement): Game {
   /** Re-apply an edit object's colliders after it moved / rotated / was hidden. */
   function placeObj(o: EditObj) {
     if (o.dyn) o.off = (o.g.parent === scene) ? 0 : HX;
-    const r = o.g.rotation.y, cs = Math.cos(r), sn = Math.sin(r);
+    const r = o.g.rotation.y, cs = Math.cos(r), sn = Math.sin(r), sc = o.g.scale.x;
     for (const k of o.cols) {
       if (o.hidden) { k.col.minX = k.col.maxX = k.col.minZ = k.col.maxZ = 1e9; continue; }
-      const wx = o.off + o.g.position.x + k.lx * cs + k.lz * sn, wz = o.g.position.z - k.lx * sn + k.lz * cs;
-      const hx = Math.abs(cs) * k.hw + Math.abs(sn) * k.hd, hz = Math.abs(sn) * k.hw + Math.abs(cs) * k.hd;
+      const lx = k.lx * sc, lz = k.lz * sc, hw = k.hw * sc, hd = k.hd * sc;
+      const wx = o.off + o.g.position.x + lx * cs + lz * sn, wz = o.g.position.z - lx * sn + lz * cs;
+      const hx = Math.abs(cs) * hw + Math.abs(sn) * hd, hz = Math.abs(sn) * hw + Math.abs(cs) * hd;
       k.col.minX = wx - hx; k.col.maxX = wx + hx; k.col.minZ = wz - hz; k.col.maxZ = wz + hz;
     }
     o.g.visible = !o.hidden;

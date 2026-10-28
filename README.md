@@ -33,9 +33,16 @@ npm run dev          # http://localhost:5173
 | L | 차·자전거 라이트 |
 | P | 사진 모드 (표정 1–6, 포즈 F, 시간대 T, 자막 가이드 G, 찍기 Space) |
 | R | 릴스 모드 (V로 녹화 시작/정지) |
-| B | 편집 모드 (클릭·드래그로 옮기기, Q/E 회전, Delete 숨기기) |
+| B | 편집·창고 모드 (클릭·드래그로 옮기기, Q/E 회전, [ ] 크기, Delete 창고에 넣기) |
 
-편집 모드에서 바꾼 배치는 브라우저의 localStorage에 저장됩니다.
+### 창고
+
+편집 모드(B) 패널 아래의 창고에서 Kenney 가구·소품 137종을 방별 탭(거실, 침실, 주방, 욕실, 작업실, 소품, 바깥)으로 골라 꺼낼 수 있습니다.
+
+- 꺼낸 물건은 화면 가운데에 놓입니다. 큰 가구는 바닥에, 작은 물건(모니터, 램프, 책 등)은 그 아래 가구 위에 올라갑니다.
+- 의자·소파·침대·변기·욕조·열린 상자 같은 물건은 꺼내자마자 C키로 앉거나 누울 수 있습니다.
+- '창고에 넣기'를 누르면 꺼낸 물건은 사라지고, 원래 집에 있던 가구는 '보관함' 탭으로 가서 다시 꺼낼 수 있습니다.
+- 배치(꺼낸 물건 포함)는 브라우저의 localStorage(`souka-layout-v2`)에 저장됩니다.
 
 ## 구조
 
@@ -52,16 +59,20 @@ src/
     Panel.tsx             조작 패널 (모드별 섹션, 표정·포즈·자막·꾸미기·화질·앨범)
     Overlays.tsx          HUD, 안내 문구, 토스트, 자막 미리보기, REC 표시
     Modals.tsx            찍은 사진 / 녹화한 릴스
+    Warehouse.tsx         편집 모드의 창고 (분류 탭, 썸네일, 보관함)
+  assets/kenney/          Kenney CC0 모델 (furniture, suburban, roads, commercial)
   game/
     index.ts              createGame(): 모듈을 순서대로 조립
     core.ts               렌더러, 씬, 시드 랜덤, 텍스처 도우미, 충돌, 편집 가능한 물체 등록 (O/E)
     types.ts              State, UiState, EditObj 등 타입
     lighting.ts           시간대별 하늘·조명
     world/alley.ts        골목 (건물, 정원, 간판, 전봇대, 가로등, 자판기, 편의점)
-    world/house.ts        집 (방 6개 + 베란다, 가구, 크기 개그 소품)
+    world/house.ts        집 구조 (방 6개 + 베란다, 벽·바닥, 손으로 만든 소품과 큰 머그컵·리모컨)
     character.ts          souka 모델, 표정, 입 모양, 꾸미기, 포즈
     interact.ts           C키 상호작용, 물건 들기/놓기, 집↔골목 이동
     vehicles.ts           자동차·자전거
+    catalog.ts            창고 목록 (Kenney 모델별 한글 이름, 분류, 크기, 앉기 여부)
+    props.ts              Kenney 모델 로딩, souka 톤 보정, 집 기본 가구 배치, 썸네일, 창고 동작
     modes.ts              사진·릴스 모드, 구도 프리셋
     capture.ts            사진 저장, 릴스 합성·녹화, 자막 그리기, 화면 크기 맞춤
     edit.ts               편집 모드와 배치 저장
@@ -69,6 +80,13 @@ src/
     input.ts              키보드·마우스
     loop.ts               매 프레임 갱신 (이동, HUD, 카메라, 벽·건물 가리기)
 ```
+
+### 에셋과 톤
+
+집 가구와 창고 물건은 [Kenney](https://kenney.nl)의 Furniture Kit, City Kit Suburban / Roads / Commercial에서
+가져왔습니다(CC0, `src/assets/kenney/LICENSE-*.txt`). 원래 색은 장난감처럼 쨍해서 `props.ts`의 `PALETTE`로
+재질 이름별 색을 하우스 시트 팔레트(베이지, 나무색, 회색, 올리브 소파, 청회색)에 맞추고,
+텍스처를 쓰는 도시 키트는 셰이더에서 채도를 낮춥니다. 새 Kenney 팩을 추가할 때도 이 규칙을 따르면 톤이 맞습니다.
 
 ### 알아 둘 점
 

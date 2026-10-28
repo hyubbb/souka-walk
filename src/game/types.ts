@@ -19,11 +19,26 @@ export interface EditObj {
   persist: boolean;
   dyn?: boolean;
   hold?: Holdable;
+  /** Kenney catalog entry this object was made from. */
+  item?: import('./catalog').CatalogItem;
+  /** Taken out of the warehouse (saved in the layout's spawned list; putting it away deletes it). */
+  spawned?: boolean;
+  uid?: string;
+  /** Small thing that sits on whatever surface is under it. */
+  top?: boolean;
+  /** Wall-mounted: keeps its height when dragged. */
+  fixedY?: boolean;
+  ready?: Promise<unknown>;
+  /** Starting size multiplier (house furniture that is bigger or smaller than the catalog default). */
+  baseScale?: number;
+  /** Height came from the saved layout: do not re-settle it. */
+  keepY?: boolean;
+  size?: { w: number; d: number; h: number };
 }
 
 export interface Holdable { obj: THREE.Object3D; name: string; hold: [number, number, number]; rx: number }
 
-export interface Seat { y: number; rot: number; pose: Pose; exit?: [number, number]; msg?: string; rl?: number; el?: [number, number] }
+export interface Seat { y: number; rot: number; pose: Pose; exit?: [number, number]; msg?: string; rl?: number; el?: [number, number]; auto?: boolean }
 
 export interface Spot {
   zone: Zone;

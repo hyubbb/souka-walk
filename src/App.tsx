@@ -13,6 +13,7 @@ export default function App() {
     if (!stageRef.current) return;
     const G = createGame(stageRef.current);
     setGame(G);
+    if (import.meta.env.DEV || location.search.includes('debug')) (window as any).__G = G; // console / test handle
     stageRef.current.focus();
     return () => { G.stop(); G.disposeInput?.(); G.renderer.dispose(); G.canvas.remove(); G.comp.remove(); };
   }, []);
