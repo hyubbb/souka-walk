@@ -25,7 +25,8 @@ export function buildCharacter(G: Game) {
   function capsule(len: number, r0: number, r1: number) {
     const pts: THREE.Vector2[] = [];
     for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 - (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r1, -len + r1 - Math.sin(a) * r1)); }
-    for (let i = 0; i <= 6; i++) { const a = (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r0, -r0 * 0.2 + Math.sin(a) * r0 * 0.2)); }
+    // round top centred on the pivot: the limb turns like a ball joint and never comes apart at the shoulder / hip
+    for (let i = 0; i <= 6; i++) { const a = (i / 6) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.cos(a) * r0, Math.sin(a) * r0)); }
     return new THREE.LatheGeometry(pts, 18);
   }
   const char = new THREE.Group();     // world position + facing
@@ -106,7 +107,7 @@ export function buildCharacter(G: Game) {
   body.add(headGroup);
 
   // soft pear-shaped torso: narrow neck under the big head, round belly, round bottom
-  const torsoPts = [[0.0, 0.33], [0.07, 0.335], [0.125, 0.36], [0.158, 0.41], [0.168, 0.48], [0.16, 0.56], [0.14, 0.64], [0.115, 0.71], [0.085, 0.77], [0.06, 0.8], [0.0, 0.81]]
+  const torsoPts = [[0.0, 0.25], [0.08, 0.256], [0.14, 0.29], [0.168, 0.36], [0.172, 0.45], [0.163, 0.55], [0.145, 0.63], [0.12, 0.7], [0.09, 0.76], [0.06, 0.8], [0.0, 0.815]]
     .map(([x, y]) => new THREE.Vector2(x, y));
   const torso = new THREE.Mesh(new THREE.LatheGeometry(new THREE.SplineCurve(torsoPts).getPoints(24), 24), skin);
   torso.scale.z = 0.88; body.add(torso);
@@ -117,12 +118,13 @@ export function buildCharacter(G: Game) {
     if (foot) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.078, 18, 12), skin); f.scale.set(1, 0.55, 1.4); f.position.set(0, -len + 0.012, 0.032); pivot.add(f); }
     body.add(pivot); return pivot;
   }
-  const legL = limb(0.38, 0.08, -0.08, 0.38, 0, true);
-  const legR = limb(0.38, 0.08,  0.08, 0.38, 0, true);
-  const armL = limb(0.3, 0.045, -0.15, 0.7, 0.058);
-  const armR = limb(0.3, 0.045,  0.15, 0.7, 0.058);
-  armL.rotation.z = -0.14; armR.rotation.z = 0.14;
-  // feet stand on y=0: leg pivot 0.38 - 0.32 - 0.035
+  // shoulders sit on the torso surface, hips inside the round bottom (feet still touch y = 0)
+  const legL = limb(0.32, 0.078, -0.078, 0.32, 0, true);
+  const legR = limb(0.32, 0.078,  0.078, 0.32, 0, true);
+  const armL = limb(0.29, 0.05, -0.122, 0.665, 0.06);
+  const armR = limb(0.29, 0.05,  0.122, 0.665, 0.06);
+  armL.rotation.z = -0.08; armR.rotation.z = 0.08;
+  // feet stand on y = 0: body 0.035 + hip 0.32 - leg 0.32 + foot centre 0.012 - foot half-height 0.043
   body.position.y = 0.035;
 
   // money (sheet: HOLDING MONEY / COUNTING): a bundle in the hands and a few on the floor
@@ -168,7 +170,7 @@ export function buildCharacter(G: Game) {
   function applyPose(dt: number) {
     body.rotation.set(0, 0, 0); body.position.set(0, 0.035, 0); headGroup.rotation.set(0, 0, 0);
     legL.rotation.set(0, 0, 0); legR.rotation.set(0, 0, 0);
-    armL.rotation.set(0, 0, -0.14); armR.rotation.set(0, 0, 0.14);
+    armL.rotation.set(0, 0, -0.08); armR.rotation.set(0, 0, 0.08);
     const { pose, walkPhase, speedNow } = S;
     const seatY = S.seatY / (char.scale.x || 1);
     handMoney.visible = pose === 'money'; floorMoney.visible = countMoney.visible = pose === 'count';
@@ -192,7 +194,7 @@ export function buildCharacter(G: Game) {
       armR.rotation.set(-2.15, 0, -0.35); armL.rotation.set(-0.55, 0, 0.35);
       headGroup.rotation.z = 0.12; headGroup.rotation.x = 0.06;
     } else if (pose === 'sit') {
-      body.position.y = seatY - 0.3;   // hips on the seat, legs just clear of it
+      body.position.y = seatY - 0.24;   // hips on the seat, legs just clear of it
       legL.rotation.x = legR.rotation.x = seatY < 0.1 ? -1.25 : -1.5;
       armL.rotation.set(-0.9, 0, -0.05); armR.rotation.set(-0.9, 0, 0.05);
       headGroup.rotation.x = 0.08;
@@ -203,7 +205,7 @@ export function buildCharacter(G: Game) {
       armL.rotation.set(-1.2, 0, 0.12); armR.rotation.set(-1.2, 0, -0.12);
       body.rotation.x = 0.12; headGroup.rotation.x = -0.05;
     } else if (pose === 'hug') {     // on the floor, knees up, arms around them, head down a little
-      body.position.y = seatY - 0.3; body.rotation.x = 0.22;
+      body.position.y = seatY - 0.24; body.rotation.x = 0.22;
       legL.rotation.set(-2.05, 0, 0.12); legR.rotation.set(-2.05, 0, -0.12);
       armL.rotation.set(-1.35, 0, 0.5); armR.rotation.set(-1.35, 0, -0.5);
       headGroup.rotation.x = 0.18;
@@ -211,7 +213,7 @@ export function buildCharacter(G: Game) {
       armL.rotation.set(-1.05, 0, 0.42); armR.rotation.set(-1.05, 0, -0.42);
       headGroup.rotation.x = 0.12; headGroup.rotation.z = Math.sin(t * 1.3) * 0.04;
     } else if (pose === 'count') {   // kneeling over little piles of notes, flicking through one
-      body.position.y = seatY - 0.2; body.rotation.x = 0.32;
+      body.position.y = seatY - 0.14; body.rotation.x = 0.32;
       legL.rotation.set(-1.15, 0, 0.1); legR.rotation.set(-1.15, 0, -0.1);
       armL.rotation.set(-0.95, 0, 0.25); armR.rotation.set(-0.95 + Math.sin(t * 7) * 0.18, 0, -0.25);
       headGroup.rotation.x = 0.28;
