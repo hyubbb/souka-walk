@@ -12,7 +12,9 @@ interface Layout { objs: Record<string, SavedObj>; spawned: SavedSpawn[] }
 export function setupEdit(G: Game) {
   const { S, scene, camera, canvas, char, editObjs, placeObj, collide, isDesc, keys, toast, stage } = G;
   let selHelper: THREE.BoxHelper | null = null, objDrag: { o: EditObj; dx: number; dz: number } | null = null, resetArmed = 0;
-  const edit = { dist: 12, pitch: 1.0, pivot: new THREE.Vector3() };
+  const edit = { dist: 12, pitch: 1.0, pivot: new THREE.Vector3(), MAX: 160 };
+  /** Look straight down from high above (toggle back to the normal edit view). */
+  function skyView() { if (edit.dist > 60) { edit.dist = 12; edit.pitch = 1.0; } else { edit.dist = 110; edit.pitch = 1.56; } G.notify(); }
   const pickRay = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hitP = new THREE.Vector3();
   const zoneOf = (o: EditObj) => (o.g.parent === G.house ? 'house' : 'alley') as 'house' | 'alley';
 
@@ -92,7 +94,7 @@ export function setupEdit(G: Game) {
       return;
     }
     const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag = { x: e.clientX, y: e.clientY };
-    S.camYaw -= dx * 0.008; edit.pitch = THREE.MathUtils.clamp(edit.pitch + dy * 0.006, 0.1, 1.5);
+    S.camYaw -= dx * 0.008; edit.pitch = THREE.MathUtils.clamp(edit.pitch + dy * 0.006, 0.1, 1.56);
   }
   function pointerUp() {
     if (objDrag) G.resetSurfaces(); objDrag = null;
@@ -166,5 +168,5 @@ export function setupEdit(G: Game) {
     G.resetSurfaces();
   }
 
-  G.edit = Object.assign(edit, { toggle: toggleEdit, select, saveSoon, pointerDown, pointerMove, pointerUp, onKey, update, rotateSel, scaleSel, putAwaySel, resetSel, resetAll, loadLayout });
+  G.edit = Object.assign(edit, { skyView, toggle: toggleEdit, select, saveSoon, pointerDown, pointerMove, pointerUp, onKey, update, rotateSel, scaleSel, putAwaySel, resetSel, resetAll, loadLayout });
 }
