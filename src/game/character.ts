@@ -20,7 +20,7 @@ export const LOW_POSES: Pose[] = ['sit', 'hug', 'count', 'lie'];
 export function buildCharacter(G: Game) {
   const { scene, canvasTex, S } = G;
   // smooth, slightly soft-vinyl white (sheet v2): smooth shading, a faint broad highlight
-  const skin = new THREE.MeshPhongMaterial({ color:0xebe8e0, shininess:10, specular:0x161616, emissive:0x1e1d1a });
+  const skin = new THREE.MeshPhongMaterial({ color:0xf1efe9, shininess:8, specular:0x141414, emissive:0x1c1c1c });
   /** A round-ended tube along -y from the pivot (r0 at the top, r1 at the bottom end), like soft clay. */
   function capsule(len: number, r0: number, r1: number) {
     const pts: THREE.Vector2[] = [];
@@ -35,17 +35,17 @@ export function buildCharacter(G: Game) {
 
   const headGroup = new THREE.Group();
   const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.36, 36, 26), skin);
-  headMesh.scale.set(1.0, 0.95, 0.97); headGroup.add(headMesh);
+  headMesh.scale.set(1.04, 0.96, 1.0); headGroup.add(headMesh);
 
   // face decals
   function eyeTex(type, side) {
     return canvasTex(128, 128, (g) => {
-      g.scale(4, 4); g.clearRect(0,0,32,32); g.strokeStyle='#121212'; g.fillStyle='#121212'; g.lineWidth=2.6;
+      g.scale(4, 4); g.clearRect(0,0,32,32); g.strokeStyle='#121212'; g.fillStyle='#121212'; g.lineWidth=2.4;
       const c=16, r=12.5;
       if (type==='blink') { g.fillRect(3,15,26,3); return; }
       if (type==='happy') { g.beginPath(); g.arc(16,23,10,Math.PI*1.15,Math.PI*1.85); g.stroke(); return; }
       g.beginPath(); g.arc(c,c,r,0,Math.PI*2); g.stroke();
-      let px=c+side*5, py=c+1, pr=2.6;
+      let px=c+(side>0?3:1), py=c+1, pr=3.3;   // both pupils glance a little to the viewer's right
       if (type==='surprised') { px=c; py=c; pr=1.9; }
       if (type==='confused')  { px=c+(side>0?6:-6); py=c+(side>0?-5:5); }
       if (type==='suspicious'){ g.clearRect(0,0,32,10); g.fillRect(2,9,28,3); px=c+side*6; py=c+1; }
@@ -69,12 +69,12 @@ export function buildCharacter(G: Game) {
     m.position.copy(n.clone().multiplyScalar(R)); m.lookAt(n.clone().multiplyScalar(R*3));
     headGroup.add(m); return m;
   }
-  const eyeL = decal(eyeTexL.default, 0.2, -0.15, -0.07, 0.372);   // smaller, lower (viewer's left)
-  const eyeR = decal(eyeTexR.default, 0.25, 0.16, 0.035, 0.38);     // bigger, higher
-  const mouth = decal(mouthTex, 0.075, 0.02, -0.13, 0.352);
+  const eyeL = decal(eyeTexL.default, 0.215, -0.19, -0.06, 0.372);   // smaller, lower (viewer's left)
+  const eyeR = decal(eyeTexR.default, 0.27, 0.215, -0.005, 0.38);    // big, out towards the right edge
+  const mouth = decal(mouthTex, 0.07, -0.015, -0.155, 0.358);
   const mouthMat = mouth.material as THREE.MeshBasicMaterial;
   mouth.scale.y = 0.5;
-  headGroup.position.y = 1.07;
+  headGroup.position.y = 0.915;   // sheet: about 3.5 heads tall, the head is over half of souka
   const mouthTexes: Record<string, THREE.Texture> = {
     line: mouthTex,
     cat: canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.strokeStyle='#121212'; g.lineWidth=1.3; g.lineCap='round'; g.beginPath(); g.moveTo(2.5,2.5); g.quadraticCurveTo(5,7,8,3.6); g.quadraticCurveTo(11,7,13.5,2.5); g.stroke(); }),
@@ -87,7 +87,7 @@ export function buildCharacter(G: Game) {
   }
   const blushTex = canvasTex(32, 32, (g) => { const gr = g.createRadialGradient(16,16,2,16,16,15); gr.addColorStop(0,'rgba(255,135,150,.8)'); gr.addColorStop(1,'rgba(255,135,150,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(16,16,15,11,0,0,7); g.fill(); });
   function softDecal(t, size, x, y, R) { const m = decal(t, size, x, y, R); m.material = new THREE.MeshBasicMaterial({ map:t, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-3 }); m.scale.y = 0.7; return m; }
-  const blush = [softDecal(blushTex, 0.14, -0.225, -0.165, 0.356), softDecal(blushTex, 0.14, 0.255, -0.115, 0.356)];
+  const blush = [softDecal(blushTex, 0.13, -0.24, -0.19, 0.356), softDecal(blushTex, 0.13, 0.25, -0.16, 0.356)];
   const hat = new THREE.Group();
   { const hm = new THREE.MeshPhongMaterial({ color:0xe2ad48, flatShading:true, shininess:0, specular:0, side:THREE.DoubleSide });
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.385, 10, 5, 0, Math.PI*2, 0, Math.PI*0.36), hm); hat.add(cap);
@@ -107,7 +107,8 @@ export function buildCharacter(G: Game) {
   body.add(headGroup);
 
   // soft pear-shaped torso: narrow neck under the big head, round belly, round bottom
-  const torsoPts = [[0.0, 0.25], [0.08, 0.256], [0.14, 0.29], [0.168, 0.36], [0.172, 0.45], [0.163, 0.55], [0.145, 0.63], [0.12, 0.7], [0.09, 0.76], [0.06, 0.8], [0.0, 0.815]]
+  // short, slightly bottom-heavy body with a thin neck under the big head
+  const torsoPts = [[0.0, 0.19], [0.1, 0.196], [0.158, 0.23], [0.176, 0.29], [0.172, 0.37], [0.16, 0.44], [0.138, 0.51], [0.1, 0.565], [0.062, 0.6], [0.055, 0.64], [0.0, 0.66]]
     .map(([x, y]) => new THREE.Vector2(x, y));
   const torso = new THREE.Mesh(new THREE.LatheGeometry(new THREE.SplineCurve(torsoPts).getPoints(24), 24), skin);
   torso.scale.z = 0.88; body.add(torso);
@@ -115,16 +116,17 @@ export function buildCharacter(G: Game) {
     const pivot = new THREE.Group(); pivot.position.set(x, y, 0);
     // arms end in a soft mitten (wider at the end), legs in a rounded foot
     const seg = new THREE.Mesh(capsule(len, r, handR || r * 1.15), skin); pivot.add(seg);
-    if (foot) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.078, 18, 12), skin); f.scale.set(1, 0.55, 1.4); f.position.set(0, -len + 0.012, 0.032); pivot.add(f); }
+    if (foot) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.075, 18, 12), skin); f.scale.set(1, 0.55, 1.35); f.position.set(0, -len + 0.012, 0.03); pivot.add(f); }
     body.add(pivot); return pivot;
   }
   // shoulders sit on the torso surface, hips inside the round bottom (feet still touch y = 0)
-  const legL = limb(0.32, 0.078, -0.078, 0.32, 0, true);
-  const legR = limb(0.32, 0.078,  0.078, 0.32, 0, true);
-  const armL = limb(0.29, 0.05, -0.122, 0.665, 0.06);
-  const armR = limb(0.29, 0.05,  0.122, 0.665, 0.06);
-  armL.rotation.z = -0.08; armR.rotation.z = 0.08;
-  // feet stand on y = 0: body 0.035 + hip 0.32 - leg 0.32 + foot centre 0.012 - foot half-height 0.043
+  // stubby legs, short thick arms that end at the hips (sheet proportions)
+  const legL = limb(0.225, 0.07, -0.072, 0.22, 0, true);
+  const legR = limb(0.225, 0.07,  0.072, 0.22, 0, true);
+  const armL = limb(0.25, 0.047, -0.15, 0.52, 0.056);
+  const armR = limb(0.25, 0.047,  0.15, 0.52, 0.056);
+  armL.rotation.z = -0.07; armR.rotation.z = 0.07;
+  // feet stand on y = 0: body 0.035 + hip 0.22 - leg 0.225 + foot centre 0.012 - foot half-height 0.041
   body.position.y = 0.035;
 
   // money (sheet: HOLDING MONEY / COUNTING): a bundle in the hands and a few on the floor
@@ -135,12 +137,12 @@ export function buildCharacter(G: Game) {
     for (let i = 0; i < n; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.045, 0.085), billMat); m.position.set((i % 2) * 0.012, i * 0.047, ((i * 7) % 3) * 0.006); m.rotation.y = (i % 3 - 1) * 0.08; b.add(m); }
     return b;
   }
-  const handMoney = bundle(3); handMoney.position.set(0, 0.5, 0.25); handMoney.visible = false; body.add(handMoney);
+  const handMoney = bundle(3); handMoney.position.set(0, 0.36, 0.2); handMoney.visible = false; body.add(handMoney);
   const floorMoney = new THREE.Group(); floorMoney.visible = false; char.add(floorMoney);
   for (const [x, z, r, n] of [[-0.3, 0.42, 0.4, 2], [0.28, 0.48, -0.3, 3], [0.05, 0.62, 0.9, 1], [-0.12, 0.32, -0.6, 1]] as [number, number, number, number][]) {
     const b = bundle(n); b.position.set(x, 0.0, z); b.rotation.y = r; floorMoney.add(b);
   }
-  const countMoney = bundle(2); countMoney.visible = false; armR.add(countMoney); countMoney.position.set(0, -0.36, 0.02); countMoney.rotation.x = Math.PI / 2;
+  const countMoney = bundle(2); countMoney.visible = false; armR.add(countMoney); countMoney.position.set(0, -0.27, 0.02); countMoney.rotation.x = Math.PI / 2;
 
   // blob shadow
   const blobTex = canvasTex(16,16,(g)=>{ const gr=g.createRadialGradient(8,8,1,8,8,8); gr.addColorStop(0,'rgba(0,0,0,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,16,16); });
@@ -170,7 +172,7 @@ export function buildCharacter(G: Game) {
   function applyPose(dt: number) {
     body.rotation.set(0, 0, 0); body.position.set(0, 0.035, 0); headGroup.rotation.set(0, 0, 0);
     legL.rotation.set(0, 0, 0); legR.rotation.set(0, 0, 0);
-    armL.rotation.set(0, 0, -0.08); armR.rotation.set(0, 0, 0.08);
+    armL.rotation.set(0, 0, -0.07); armR.rotation.set(0, 0, 0.07);
     const { pose, walkPhase, speedNow } = S;
     const seatY = S.seatY / (char.scale.x || 1);
     handMoney.visible = pose === 'money'; floorMoney.visible = countMoney.visible = pose === 'count';
@@ -194,18 +196,18 @@ export function buildCharacter(G: Game) {
       armR.rotation.set(-2.15, 0, -0.35); armL.rotation.set(-0.55, 0, 0.35);
       headGroup.rotation.z = 0.12; headGroup.rotation.x = 0.06;
     } else if (pose === 'sit') {
-      body.position.y = seatY - 0.24;   // hips on the seat, legs just clear of it
+      body.position.y = seatY - 0.15;   // hips on the seat, legs just clear of it
       legL.rotation.x = legR.rotation.x = seatY < 0.1 ? -1.25 : -1.5;
       armL.rotation.set(-0.9, 0, -0.05); armR.rotation.set(-0.9, 0, 0.05);
       headGroup.rotation.x = 0.08;
     } else if (pose === 'ride') {
-      body.position.y = seatY - 0.33;
+      body.position.y = seatY - 0.16;
       const s = Math.sin(walkPhase);
       legL.rotation.x = -1.05 + s * 0.45; legR.rotation.x = -1.05 - s * 0.45;
       armL.rotation.set(-1.2, 0, 0.12); armR.rotation.set(-1.2, 0, -0.12);
       body.rotation.x = 0.12; headGroup.rotation.x = -0.05;
     } else if (pose === 'hug') {     // on the floor, knees up, arms around them, head down a little
-      body.position.y = seatY - 0.24; body.rotation.x = 0.22;
+      body.position.y = seatY - 0.15; body.rotation.x = 0.22;
       legL.rotation.set(-2.05, 0, 0.12); legR.rotation.set(-2.05, 0, -0.12);
       armL.rotation.set(-1.35, 0, 0.5); armR.rotation.set(-1.35, 0, -0.5);
       headGroup.rotation.x = 0.18;
@@ -213,7 +215,7 @@ export function buildCharacter(G: Game) {
       armL.rotation.set(-1.05, 0, 0.42); armR.rotation.set(-1.05, 0, -0.42);
       headGroup.rotation.x = 0.12; headGroup.rotation.z = Math.sin(t * 1.3) * 0.04;
     } else if (pose === 'count') {   // kneeling over little piles of notes, flicking through one
-      body.position.y = seatY - 0.14; body.rotation.x = 0.32;
+      body.position.y = seatY - 0.07; body.rotation.x = 0.32;
       legL.rotation.set(-1.15, 0, 0.1); legR.rotation.set(-1.15, 0, -0.1);
       armL.rotation.set(-0.95, 0, 0.25); armR.rotation.set(-0.95 + Math.sin(t * 7) * 0.18, 0, -0.25);
       headGroup.rotation.x = 0.28;
@@ -223,7 +225,7 @@ export function buildCharacter(G: Game) {
       armL.rotation.set(-0.3, 0, -0.5); armR.rotation.set(-0.2, 0, 0.9);
       headGroup.rotation.z = 0.18; headGroup.rotation.y = Math.sin(t * 0.8) * 0.12;
     } else if (pose === 'drive') {   // in the driver's seat, hands on the wheel
-      body.position.y = seatY - 0.33;
+      body.position.y = seatY - 0.16;
       legL.rotation.x = legR.rotation.x = -1.45;
       armL.rotation.set(-1.15, 0, -0.12); armR.rotation.set(-1.15, 0, 0.12);
       headGroup.rotation.x = 0.04; headGroup.rotation.z = Math.sin(S.walkPhase * 0.3) * 0.03;
