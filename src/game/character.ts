@@ -108,7 +108,7 @@ export function buildCharacter(G: Game) {
 
   // soft pear-shaped torso: narrow neck under the big head, round belly, round bottom
   // short, slightly bottom-heavy body with a thin neck under the big head
-  const torsoPts = [[0.0, 0.19], [0.1, 0.196], [0.158, 0.23], [0.176, 0.29], [0.172, 0.37], [0.16, 0.44], [0.138, 0.51], [0.1, 0.565], [0.062, 0.6], [0.055, 0.64], [0.0, 0.66]]
+  const torsoPts = [[0.0, 0.19], [0.085, 0.196], [0.13, 0.23], [0.145, 0.29], [0.142, 0.37], [0.131, 0.44], [0.11, 0.51], [0.08, 0.56], [0.055, 0.6], [0.05, 0.64], [0.0, 0.66]]
     .map(([x, y]) => new THREE.Vector2(x, y));
   const torso = new THREE.Mesh(new THREE.LatheGeometry(new THREE.SplineCurve(torsoPts).getPoints(24), 24), skin);
   torso.scale.z = 0.88; body.add(torso);
@@ -121,11 +121,13 @@ export function buildCharacter(G: Game) {
   }
   // shoulders sit on the torso surface, hips inside the round bottom (feet still touch y = 0)
   // stubby legs, short thick arms that end at the hips (sheet proportions)
-  const legL = limb(0.225, 0.07, -0.072, 0.22, 0, true);
-  const legR = limb(0.225, 0.07,  0.072, 0.22, 0, true);
-  const armL = limb(0.25, 0.047, -0.15, 0.52, 0.056);
-  const armR = limb(0.25, 0.047,  0.15, 0.52, 0.056);
-  armL.rotation.z = -0.07; armR.rotation.z = 0.07;
+  const legL = limb(0.225, 0.068, -0.07, 0.22, 0, true);
+  const legR = limb(0.225, 0.068,  0.07, 0.22, 0, true);
+  // arms start high and close to the neck and fall outward in an A shape (sloping shoulders, sheet front view)
+  const ARM_Z = 0.42;
+  const armL = limb(0.29, 0.048, -0.078, 0.56, 0.057);
+  const armR = limb(0.29, 0.048,  0.078, 0.56, 0.057);
+  armL.rotation.z = -ARM_Z; armR.rotation.z = ARM_Z;
   // feet stand on y = 0: body 0.035 + hip 0.22 - leg 0.225 + foot centre 0.012 - foot half-height 0.041
   body.position.y = 0.035;
 
@@ -172,7 +174,7 @@ export function buildCharacter(G: Game) {
   function applyPose(dt: number) {
     body.rotation.set(0, 0, 0); body.position.set(0, 0.035, 0); headGroup.rotation.set(0, 0, 0);
     legL.rotation.set(0, 0, 0); legR.rotation.set(0, 0, 0);
-    armL.rotation.set(0, 0, -0.07); armR.rotation.set(0, 0, 0.07);
+    armL.rotation.set(0, 0, -ARM_Z); armR.rotation.set(0, 0, ARM_Z);
     const { pose, walkPhase, speedNow } = S;
     const seatY = S.seatY / (char.scale.x || 1);
     handMoney.visible = pose === 'money'; floorMoney.visible = countMoney.visible = pose === 'count';
