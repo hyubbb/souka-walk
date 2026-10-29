@@ -28,8 +28,8 @@ export function setupLighting(G: Game) {
     } else if (S.area === 'city') { fog.near = 70; fog.far = 300; }
     else if (S.area === 'yokohama') { fog.near = 40; fog.far = 170; }
     else { fog.near = 16; fog.far = 58; }
-    const far = S.zone === 'alley' && S.area === 'city' ? 340 : 200;
-    if (G.camera.far !== far) { G.camera.far = far; G.camera.updateProjectionMatrix(); }
+    G.fogBase = { near: fog.near, far: fog.far, cam: S.zone === 'alley' && S.area === 'city' ? 340 : 200 };
+    if (G.camera.far !== G.fogBase.cam) { G.camera.far = G.fogBase.cam; G.camera.updateProjectionMatrix(); }
     if (G.M) G.M.glass.color.set(t.bg).lerp(new THREE.Color(0xffffff), i === 3 ? 0.05 : 0.35);
     if (G.applyLamps) G.applyLamps(t.lamps);
     S.clockBase = t.clock;

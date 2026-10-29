@@ -42,7 +42,7 @@ export function setupInput(G: Game) {
   let pinch = 0;
   const pinchDist = () => { const [a, b] = [...touches.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
   const zoom = (d: number) => {
-    if (S.editMode) G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + d * 2.4, 2, 40);
+    if (S.editMode) G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + d * 2.4 * Math.max(1, G.edit.dist / 20), 2, G.edit.MAX);
     else S.camDist = THREE.MathUtils.clamp(S.camDist + d, G.minD(), G.maxD());
   };
   canvas.addEventListener('pointerdown', (e: PointerEvent) => {
@@ -71,7 +71,7 @@ export function setupInput(G: Game) {
   canvas.addEventListener('pointercancel', () => { S.drag = null; });
   stage.addEventListener('wheel', (e: WheelEvent) => {
     e.preventDefault();
-    if (S.editMode) { G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + e.deltaY * 0.012, 2, 40); return; }
+    if (S.editMode) { G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + e.deltaY * 0.012 * Math.max(1, G.edit.dist / 20), 2, G.edit.MAX); return; }
     S.camDist = THREE.MathUtils.clamp(S.camDist + e.deltaY * 0.005, G.minD(), G.maxD());
   }, { passive: false });
 

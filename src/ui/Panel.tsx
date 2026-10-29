@@ -94,8 +94,9 @@ export function Panel() {
             <dt><K>Q</K> <K>E</K></dt><dd>회전 15° (<K>Shift</K> 90°)</dd>
             <dt><K>[</K> <K>]</K></dt><dd>크기 줄이기 · 키우기</dd>
             <dt><K>Delete</K></dt><dd>창고에 넣기</dd>
-            <dt><K>WASD</K> · 휠</dt><dd>화면 이동 · 확대</dd>
+            <dt><K>WASD</K> · 휠</dt><dd>화면 이동 · 확대 (휠·핀치로 하늘 높이까지)</dd>
           </dl>
+          <div className="row"><button onClick={() => G.edit.skyView()}>{G.edit.dist > 60 ? '가까이 보기' : '하늘에서 보기'}</button></div>
           <p className="sel">{S.sel ? `선택: ${S.sel.name}${Math.abs(S.sel.g.scale.x - (S.sel.baseScale || 1)) > 0.01 ? ` ×${(S.sel.g.scale.x / (S.sel.baseScale || 1)).toFixed(2)}` : ''}` : '선택한 물건 없음'}</p>
           <div className="row">
             <button disabled={!S.sel} onClick={() => G.edit.rotateSel(15)}>↺ 15°</button>

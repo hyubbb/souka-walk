@@ -120,12 +120,19 @@ export function setupLoop(G: Game) {
     const target = tmpV.set(char.position.x, char.position.y + (S.riding ? 0.9 : (S.pose === 'lie' ? 0.35 : S.pose === 'sit' || S.pose === 'hug' || S.pose === 'count' ? 0.6 : 0.78) * (S.size || 1)), char.position.z);
     if (S.photo) target.add(pan);
     if (S.editMode) { target.copy(G.edit.pivot); pitch = G.edit.pitch; dist = G.edit.dist; }
+    // high up in edit mode: push the fog and the far plane out so the whole neighbourhood shows
+    if (G.fogBase) {
+      const extra = S.editMode ? Math.max(0, dist - 12) : 0, fog = scene.fog as THREE.Fog;
+      fog.near = G.fogBase.near + extra * 1.2; fog.far = G.fogBase.far + extra * 2.5;
+      const far = G.fogBase.cam + extra * 2.5;
+      if (Math.abs(camera.far - far) > 1) { camera.far = far; camera.updateProjectionMatrix(); }
+    }
     let cx = target.x + Math.sin(S.camYaw) * Math.cos(pitch) * dist;
     let cz = target.z + Math.cos(S.camYaw) * Math.cos(pitch) * dist;
     let cy = target.y + Math.sin(pitch) * dist;
     // outdoors: pull the camera in a little; if that is not enough, cut the blocking building away
     for (const o of hiddenOcc) o.visible = true; hiddenOcc.length = 0;
-    if (S.zone === 'alley') {
+    if (S.zone === 'alley' && !S.editMode) {
       const side = new THREE.Vector3(Math.cos(S.camYaw), 0, -Math.sin(S.camYaw)).multiplyScalar(0.35), origin = new THREE.Vector3();
       camDir.set(cx - target.x, cy - target.y, cz - target.z); const want = camDir.length(); camDir.normalize();
       const hits: THREE.Intersection[] = [];
