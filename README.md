@@ -1,13 +1,29 @@
 # souka 출근길
 
-> **기술 스택** · TypeScript · React 19 · Three.js (r128, WebGL) · Vite 7 · vite-plugin-singlefile · Canvas 2D API · MediaRecorder / captureStream (릴스 녹화) · Pointer Events (모바일 가상 스틱·핀치 줌) · localStorage · Vercel 배포  
-> **에셋 파이프라인** · glTF/GLB · FBX2glTF · gltf-transform · meshoptimizer (메시 단순화) · sharp (텍스처 리사이즈·WebP) · Playwright (헤드리스 렌더 테스트·썸네일 검증)  
-> **구현 포인트** · useSyncExternalStore로 Three.js 게임 상태와 React UI 연결 · AABB 충돌 + 삼각형 공간 격자(지형 높이·벽·카메라 충돌) · 수백만 정점 모델을 수만 정점으로 줄인 3D 에셋 최적화 · 단일 HTML 빌드(16MB 제한 대응 코드 분리) · 셰이더 주입(onBeforeCompile)으로 톤 보정 · 구 UV에 얼굴을 그리는 캔버스 텍스처 캐시
-
 souka 마스코트를 직접 조종해 집 안을 돌아다니고, 현관을 나서 골목과 편의점까지 걸어가며
 인스타그램용 사진(4:5)과 릴스(9:16)를 찍는 레트로 3D 웹 게임입니다.
 골목 끝 개찰구를 지나면 도쿄 타케시바(PLATEAU 3D 도시 모델)로 갈 수 있습니다.
 2000년대 일본 저예산 3D 게임 느낌을 목표로 합니다.
+
+## 기술 스택
+
+| 구분 | 사용 기술 |
+| --- | --- |
+| 언어 · 프레임워크 | TypeScript, React 19 |
+| 3D 렌더링 | Three.js (WebGL) |
+| 빌드 · 배포 | Vite 7, vite-plugin-singlefile, Vercel |
+| 브라우저 API | Canvas 2D, MediaRecorder · captureStream, Pointer Events, localStorage |
+| 3D 에셋 처리 | glTF/GLB, FBX2glTF, gltf-transform, meshoptimizer, sharp |
+| 테스트 | Playwright (헤드리스 렌더링 스크린샷) |
+
+### 주요 구현
+
+- **React ↔ Three.js 상태 연결**: 게임 루프는 Three.js가, 패널·HUD는 React가 맡고 `useSyncExternalStore`로 상태를 공유
+- **충돌 처리**: 가구·건물은 AABB, 600m 도시 지도는 삼각형 공간 격자로 지형 높이·벽·카메라 충돌 판정 (쿼리당 약 0.03ms)
+- **3D 에셋 최적화**: 수백만 정점 FBX 모델을 메시 단순화·텍스처 압축으로 수만 정점, 수 MB 이하로 축소
+- **사진·영상 캡처**: 4:5 사진 저장과 9:16 릴스 합성·녹화 (Canvas + MediaRecorder)
+- **모바일 대응**: 가상 조이스틱, 상황별 액션 버튼, 핀치 줌
+- **단일 HTML 빌드**: 모든 에셋을 한 파일에 담고, 용량 제한(16MB)에 맞춰 무거운 모델만 빌드별로 분리
 
 ## 실행
 
