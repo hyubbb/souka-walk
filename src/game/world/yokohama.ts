@@ -74,11 +74,36 @@ export function setupYokohama(G: Game) {
   line((-92 + BX - BW / 2) / 2, -0.12, BX - BW / 2 + 92, 0.12, yellow); line((-92 + BX - BW / 2) / 2, 0.12, BX - BW / 2 + 92, 0.12, yellow);
   for (let x = -90; x < BX - BW / 2 - 4; x += 8) for (const z of [-3.2, 3.2]) line(x, z, 4, 0.12);
   // the big road north from Surugabashi (and south past the parks), with pavements
-  road(BX, (-66 + 56) / 2, BW, 122);
-  pave(BX - BW / 2 - 1.8, -36, 3.6, 59); pave(BX + BW / 2 + 1.8, -36, 3.6, 59);
+  // south of the crossing it stays wide; north of it, towards the parks, it is a narrow one-lane street
+  road(BX, 31.25, BW, 49.5); road(BX, 0, BW, 13);
   pave(BX - BW / 2 - 1.8, 33, 3.6, 46); pave(BX + BW / 2 + 1.8, 33, 3.6, 46);
-  for (const sx of [-1, 1]) line(BX + sx * (BW / 2 - 0.3), -5, 0.15, 122);
-  line(BX - 0.1, -5, 0.12, 122, yellow);
+  for (const sx of [-1, 1]) line(BX + sx * (BW / 2 - 0.3), 31.25, 0.15, 49.5);
+  line(BX - 0.1, 31.25, 0.12, 49.5, yellow);
+  const NW = 6;
+  road(BX, -36.25, NW, 59.5);
+  pave(BX - NW / 2 - 3.3, -36.25, 6.6, 59.5); pave(BX + NW / 2 + 3.3, -36.25, 6.6, 59.5);
+  for (const sx of [-1, 1]) line(BX + sx * (NW / 2 - 0.25), -36.25, 0.12, 59.5);
+  // Route 21 carries on east past the crossing and bends north-east along the expressway;
+  // Bandobashi Park lies south of it, the parking lot and the small park north of it
+  const R21E: [number, number][] = [[BX + BW / 2, 0], [52, 0], [62, -4], [70, -12], [78, -22], [92, -32]];
+  function roadPath(pts: [number, number][], w: number) {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[i + 1], len = Math.hypot(bx - ax, bz - az), rot = Math.atan2(-(bz - az), bx - ax);
+      const nx = -(bz - az) / len, nz = (bx - ax) / len, cx = (ax + bx) / 2, cz = (az + bz) / 2;
+      const r = flat(cx, cz, len + w * 0.6, w, lam({ map: rep(asphaltT, len / 2, w / 2) }), 0.002, rot); void r;
+      for (const sd of [-1, 1]) {
+        flat(cx + nx * sd * (w / 2 + 1.6), cz + nz * sd * (w / 2 + 1.6), len + 3, 3.2, lam({ map: rep(paveT, len / 1.6, 2) }), 0.005, rot);
+        flat(cx + nx * sd * (w / 2 - 0.3), cz + nz * sd * (w / 2 - 0.3), len, 0.15, white, 0.009, rot);
+      }
+      flat(cx, cz, len, 0.12, yellow, 0.009, rot);
+    }
+  }
+  roadPath(R21E, 10);
+  const nearR21E = (x: number, z: number, m: number) => R21E.some(([ax, az], i) => {
+    if (i === R21E.length - 1) return false;
+    const [bx, bz] = R21E[i + 1], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - ax - dx * t, z - az - dz * t) < m;
+  });
   // other streets
   const STREETS = [{ x: -35, w: 6, z0: RZ1 - 0.5, z1: -6.5 }, { x: 75, w: 12, z0: -130, z1: -35 }, { x: -60, w: 6, z0: 6.5, z1: 56 }];
   for (const s of STREETS) {
@@ -91,8 +116,8 @@ export function setupYokohama(G: Game) {
   for (const z of [IZ - 3.3, IZ + 3.3]) pave(0, z, 184, 0.9);
   // crossings
   crosswalk(DOOR.x + 1.5, 0, 'x', 12.4);   // home → MaxValu
-  crosswalk(BX - BW / 2 - 2.2, 0, 'x', 12.4); crosswalk(BX, 8.8, 'z', BW - 0.6); crosswalk(BX, -8.8, 'z', BW - 0.6);
-  crosswalk(BX, IZ + 4.2, 'z', BW - 0.6); crosswalk(-35, -8.3, 'z', 5.4); crosswalk(-60, 8.3, 'z', 5.4);
+  crosswalk(BX - BW / 2 - 2.2, 0, 'x', 12.4); crosswalk(BX, 8.8, 'z', BW - 0.6); crosswalk(BX, -8.8, 'z', NW - 0.6); crosswalk(BX + BW / 2 + 2.2, 0, 'x', 9.6);
+  crosswalk(BX, IZ + 4.2, 'z', NW - 0.6); crosswalk(-35, -8.3, 'z', 5.4); crosswalk(-60, 8.3, 'z', 5.4);
 
   // ---------- buildings ----------
   // window tile = one floor (2.8 m) × one bay (3.2 m)
@@ -289,19 +314,19 @@ export function setupYokohama(G: Game) {
     SEATS.push({ zone: 'alley', at: [YO.x + x + fx * 0.15, YO.z + z + fz * 0.15], r: 1.1, label, seat: { y: 0.48, rot, pose: 'sit', exit: [YO.x + x + fx * 0.9, YO.z + z + fz * 0.9] } } as Spot);
   }
   {
-    const PX0 = BX + BW / 2 + 3.6, PX1 = 62, PZ0 = -6, PZ1 = 34;
+    const PX0 = BX + BW / 2 + 3.6, PX1 = 62, PZ0 = 8.5, PZ1 = 34;   // south of Route 21's eastern stretch
     flat((PX0 + PX1) / 2, (PZ0 + PZ1) / 2, PX1 - PX0, PZ1 - PZ0, lam({ map: rep(grassT, 18, 22) }), 0.006);
     const path = lam({ map: rep(dirtT, 2, 2) });
-    const pts = [[PX0, 2], [36, 6], [42, 14], [40, 24], [47, 30], [55, 33]];
+    const pts = [[PX0, 11], [36, 13], [42, 17], [40, 24], [47, 30], [55, 33]];
     for (let i = 0; i < pts.length - 1; i++) {
       const [ax, az] = pts[i], [bx, bz] = pts[i + 1], len = Math.hypot(bx - ax, bz - az);
       flat((ax + bx) / 2, (az + bz) / 2, 2.4, len + 1.8, path, 0.012, -Math.atan2(bx - ax, bz - az));
     }
-    for (const [x, z, s] of [[33, -3, 1.1], [37, 26, 1.2], [46, 22, 1], [50, 8, 1.2], [56, -2, 1], [58, 18, 1.1], [52, 28, 0.9], [44, 2, 0.9], [34, 17, 1], [59, 30, 1]] as [number, number, number][]) tree(x, z, s);
+    for (const [x, z, s] of [[33, 12, 1.1], [37, 26, 1.2], [46, 22, 1], [50, 14, 1.2], [57, 11, 1], [58, 21, 1.1], [52, 28, 0.9], [44, 11, 0.9], [34, 19, 1], [59, 30, 1]] as [number, number, number][]) tree(x, z, s);
     bench(38, 10, -Math.PI / 2, '반도바시 공원 벤치에 앉기');
     bench(45, 26, Math.PI, '반도바시 공원 벤치에 앉기');
     const pT = canvasTex(64, 24, (g) => { g.fillStyle = '#e9e3d2'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#2f4a2f'; g.font = 'bold 11px serif'; g.fillText('阪東橋公園', 4, 16); });
-    box(PX0 + 0.6, 0, 1, 0.15, 1.2, 0.15, wood); const sg = mesh(new THREE.PlaneGeometry(2, 0.75), lam({ map: pT }), PX0 + 0.7, 1.5, 1); sg.rotation.y = -Math.PI / 2;
+    box(PX0 + 0.6, 0, 10, 0.15, 1.2, 0.15, wood); const sg = mesh(new THREE.PlaneGeometry(2, 0.75), lam({ map: pT }), PX0 + 0.7, 1.5, 10); sg.rotation.y = -Math.PI / 2;
     // the expressway (Kariba line) curving north along the park's east side
     const exp = lam({ color: 0xa9a59c }), expSide = lam({ color: 0x94a07a });
     const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(64, 9, 60), new THREE.Vector3(67, 9, 25), new THREE.Vector3(65, 9, -10), new THREE.Vector3(72, 9, -28), new THREE.Vector3(96, 9, -44)]);
@@ -311,18 +336,19 @@ export function setupYokohama(G: Game) {
       const seg = mesh(new THREE.BoxGeometry(9, 1.2, len + 0.3), exp, (a.x + b.x) / 2, 9, (a.z + b.z) / 2, true); seg.rotation.y = ang;
       for (const sx of [-1, 1]) { const w = mesh(new THREE.BoxGeometry(0.3, 1.1, len + 0.3), expSide, (a.x + b.x) / 2 + Math.cos(ang) * sx * 4.4, 10.15, (a.z + b.z) / 2 - Math.sin(ang) * sx * 4.4, true); w.rotation.y = ang; }
       if (i % 3 === 0) {
-        const onRoad = Math.abs(a.z - IZ) < 4.5 || STREETS.some((s) => Math.abs(a.x - s.x) < s.w / 2 + 1 && a.z > s.z0 && a.z < s.z1);
+        const onRoad = Math.abs(a.z - IZ) < 4.5 || nearR21E(a.x, a.z, 7.5) || STREETS.some((s) => Math.abs(a.x - s.x) < s.w / 2 + 1 && a.z > s.z0 && a.z < s.z1);
         if (!onRoad) { box(a.x, 0, a.z, 1.4, 8.4, 1.4, exp, true); col(a.x, a.z, 1.4, 1.4); }
       }
     }
     // Bandobashi subway entrance at the park corner, Yoshinocho at the west end
     const sub = (name: string) => canvasTex(64, 32, (g) => { g.fillStyle = '#1f5fa8'; g.fillRect(0, 0, 64, 32); g.fillStyle = '#fff'; g.beginPath(); g.arc(12, 16, 9, 0, 7); g.fill(); g.fillStyle = '#1f5fa8'; g.font = 'bold 11px sans-serif'; g.fillText('B', 8, 20); g.fillStyle = '#fff'; g.font = 'bold 10px sans-serif'; g.fillText(name, 25, 20); });
-    box(PX0 + 2, 0, -4.2, 2.4, 2.6, 3, lam({ color: 0xcfd3d6 }), true); col(PX0 + 2, -4.2, 2.4, 3);
-    const s1 = mesh(new THREE.PlaneGeometry(2, 1), lam({ map: sub('阪東橋') }), PX0 + 0.78, 2.1, -4.2); s1.rotation.y = -Math.PI / 2;
+    box(PX0 + 2, 0, 13.2, 2.4, 2.6, 3, lam({ color: 0xcfd3d6 }), true); col(PX0 + 2, 13.2, 2.4, 3);
+    const s1 = mesh(new THREE.PlaneGeometry(2, 1), lam({ map: sub('阪東橋') }), PX0 + 0.78, 2.1, 13.2); s1.rotation.y = -Math.PI / 2;
     box(-82, 0, 11.6, 3, 2.6, 2.4, lam({ color: 0xcfd3d6 }), true); col(-82, 11.6, 3, 2.4);
     mesh(new THREE.PlaneGeometry(2.2, 1.1), lam({ map: sub('吉野町') }), -82, 2.2, 10.38).rotation.y = Math.PI;
     // east of the expressway, and south of the park
-    fillBlock(72, 92, -30, 34, 8, 20);
+    fillBlock(72, 92, 8, 34, 8, 20);
+    fillBlock(84, 92, -16, -6, 6, 10);
     fillBlock(BX + BW / 2 + 3.6, 62, 37, 55, 6, 14);
   }
 
@@ -343,7 +369,7 @@ export function setupYokohama(G: Game) {
     const stone = lam({ color: 0xa8a49b });
     box(CX0 + 16, 0, -25, 0.5, 0.8, 0.5, stone); box(CX0 + 16, 0.8, -25, 0.8, 0.12, 0.8, stone); mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 6), poleMat, CX0 + 16, 1.0, -25);
     col(CX0 + 16, -25, 0.8, 0.8);
-    fillBlock(CX0 + 22.5, 66, -33, -10, 6, 14);
+    fillBlock(CX0 + 22.5, 58, -33, -9, 6, 14);
 
     // Fujimigawa Park (富士見川公園): the playground — gravel, blue A-frame swings, iron bars, red pipe fences
     const FZ0 = -60, FZ1 = IZ - 3.8, FX1 = CX0 + 22;
