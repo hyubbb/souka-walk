@@ -15,8 +15,8 @@ import type { Game, Spot } from '../types';
 export const YO = { x: -600, z: 0 };
 const BOUNDS = { x0: -92, x1: 92, z0: -87, z1: 56 };
 /** Souka's front door (local x / z): home is south of Route 21, the door faces north. */
-const HOME = { x: -5, z: 15.75 };
-const DOOR = { x: -6, z: 10.6 };
+const HOME = { x: -14, z: 15.75 };
+const DOOR = { x: -15, z: 10.6 };   // straight across the road from the MaxValu sign
 const RZ0 = -82, RZ1 = -70;            // the river, bank to bank
 const BX = 22, BW = 12;               // the big road north from Surugabashi
 
@@ -90,7 +90,7 @@ export function setupYokohama(G: Game) {
   road(0, IZ, 184, 6);
   for (const z of [IZ - 3.3, IZ + 3.3]) pave(0, z, 184, 0.9);
   // crossings
-  crosswalk(-6, 0, 'x', 12.4);             // home → MaxValu
+  crosswalk(DOOR.x + 1.5, 0, 'x', 12.4);   // home → MaxValu
   crosswalk(BX - BW / 2 - 2.2, 0, 'x', 12.4); crosswalk(BX, 8.8, 'z', BW - 0.6); crosswalk(BX, -8.8, 'z', BW - 0.6);
   crosswalk(BX, IZ + 4.2, 'z', BW - 0.6); crosswalk(-35, -8.3, 'z', 5.4); crosswalk(-60, 8.3, 'z', 5.4);
 
@@ -203,9 +203,10 @@ export function setupYokohama(G: Game) {
   }
   // the rest of home's block and the blocks south of Route 21
   fillBlock(-92, -63.5, 10.5, 55);
-  fillBlock(-56.5, -18.5, 10.5, 30);
+  fillBlock(-56.5, -26, 10.5, 30);
   fillBlock(-56.5, 14, 33, 55, 6, 18);
-  fillBlock(-18.5, 14, 23, 30.5, 6, 14);
+  fillBlock(-26, 14, 23.5, 30.5, 6, 14);
+  fillBlock(9.5, 15.5, 10.5, 22, 6, 12);
 
   // ---------- across the road (north side): MaxValu tower and the striped tower ----------
   {
@@ -256,7 +257,7 @@ export function setupYokohama(G: Game) {
     col(x, z, 0.25, 0.25);
   }
   for (let x = -86; x <= BX - BW / 2 - 6; x += 12) {
-    if (Math.abs(x + 35) < 4 || Math.abs(x + 60) < 4 || Math.abs(x + 6) < 3) continue;
+    if (Math.abs(x + 35) < 4 || Math.abs(x + 60) < 4 || Math.abs(x - DOOR.x - 1.5) < 3) continue;
     tree(x + 4, -8.9, 0.8); tree(x + 4, 8.9, 0.8);
     streetLamp(x, -7.0, 0, 1);
     if (Math.abs(x + 6 - DOOR.x) > 3) streetLamp(x + 6, 7.0, 0, -1);   // keep the front door clear
