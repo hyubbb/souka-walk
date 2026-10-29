@@ -5,6 +5,18 @@ souka 마스코트를 직접 조종해 집 안을 돌아다니고, 현관을 나
 골목 끝 개찰구를 지나면 도쿄 타케시바(PLATEAU 3D 도시 모델)로 갈 수 있습니다.
 2000년대 일본 저예산 3D 게임 느낌을 목표로 합니다.
 
+## 스크린샷
+
+| 집 (거실) | 집 (침실) | 골목 |
+| :---: | :---: | :---: |
+| ![집 거실](docs/screenshots/house.jpg) | ![침실](docs/screenshots/bedroom.jpg) | ![골목](docs/screenshots/alley.jpg) |
+| **운전** | **타케시바 (PLATEAU)** | **모바일** |
+| ![운전](docs/screenshots/drive.jpg) | ![타케시바](docs/screenshots/takeshiba.jpg) | ![모바일](docs/screenshots/mobile.jpg) |
+
+**사진 모드** — 표정·포즈·시간대·자막을 고르고 4:5로 찍기
+
+![사진 모드](docs/screenshots/photo-mode.jpg)
+
 ## 기술 스택
 
 | 구분 | 사용 기술 |
