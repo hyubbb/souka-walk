@@ -1,7 +1,7 @@
 # souka 출근길
 
-> **기술 스택** · TypeScript · React 19 · Three.js (r128, WebGL) · Vite 7 · vite-plugin-singlefile · Canvas 2D API · MediaRecorder / captureStream (릴스 녹화) · Pointer Events (모바일 가상 스틱·핀치 줌) · localStorage · Vercel 배포
-> **에셋 파이프라인** · glTF/GLB · FBX2glTF · gltf-transform · meshoptimizer (메시 단순화) · sharp (텍스처 리사이즈·WebP) · Playwright (헤드리스 렌더 테스트·썸네일 검증)
+> **기술 스택** · TypeScript · React 19 · Three.js (r128, WebGL) · Vite 7 · vite-plugin-singlefile · Canvas 2D API · MediaRecorder / captureStream (릴스 녹화) · Pointer Events (모바일 가상 스틱·핀치 줌) · localStorage · Vercel 배포  
+> **에셋 파이프라인** · glTF/GLB · FBX2glTF · gltf-transform · meshoptimizer (메시 단순화) · sharp (텍스처 리사이즈·WebP) · Playwright (헤드리스 렌더 테스트·썸네일 검증)  
 > **구현 포인트** · useSyncExternalStore로 Three.js 게임 상태와 React UI 연결 · AABB 충돌 + 삼각형 공간 격자(지형 높이·벽·카메라 충돌) · 수백만 정점 모델을 수만 정점으로 줄인 3D 에셋 최적화 · 단일 HTML 빌드(16MB 제한 대응 코드 분리) · 셰이더 주입(onBeforeCompile)으로 톤 보정 · 구 UV에 얼굴을 그리는 캔버스 텍스처 캐시
 
 souka 마스코트를 직접 조종해 집 안을 돌아다니고, 현관을 나서 골목과 편의점까지 걸어가며
