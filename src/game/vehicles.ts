@@ -126,7 +126,7 @@ export function setupVehicles(G: Game) {
         const qx = Math.max(c.minX, Math.min(px, c.maxX)), qz = Math.max(c.minZ, Math.min(pz, c.maxZ));
         if ((px-qx)*(px-qx) + (pz-qz)*(pz-qz) < r*r) return true;
       }
-      if (!inCity() && (px < -21 || px > 21 || pz < -52.8 || pz > 13.6)) return true;
+      if (!G.inOutBounds(px, pz, 0.3)) return true;
     }
     return false;
   }
@@ -156,7 +156,7 @@ export function setupVehicles(G: Game) {
     const ok = (x: number, z: number): number | null => {
       if (collide(x, z)) return null;
       if (inCity()) { const gy = G.city.groundAt(x, z, v.g.position.y + 0.6); return gy === null || Math.abs(gy - v.g.position.y) > 0.6 ? null : gy; }
-      return x < -21 || x > 21 || z < -52.8 || z > 13.6 ? null : 0;
+      return G.inOutBounds(x, z) ? 0 : null;
     };
     // driver's door, other door, behind, in front, then anywhere around the car further out
     const side = v.size[0] / 2 + 0.45, end = v.size[1] / 2 + 0.45;

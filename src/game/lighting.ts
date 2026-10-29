@@ -26,6 +26,7 @@ export function setupLighting(G: Game) {
       sun.intensity = i === 3 ? 0.15 : 0.45;
       fog.near = 40; fog.far = 140;
     } else if (S.area === 'city') { fog.near = 70; fog.far = 300; }
+    else if (S.area === 'yokohama') { fog.near = 40; fog.far = 170; }
     else { fog.near = 16; fog.far = 58; }
     const far = S.zone === 'alley' && S.area === 'city' ? 340 : 200;
     if (G.camera.far !== far) { G.camera.far = far; G.camera.updateProjectionMatrix(); }
