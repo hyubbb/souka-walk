@@ -1,4 +1,4 @@
-// souka: smooth soft-vinyl body (character sheet v2), face decals (eyes / mouth / blush), accessories and poses.
+// souka: smooth soft-vinyl body (character sheet v2), a face painted on the head (eyes / mouth / blush), accessories and poses.
 import * as THREE from 'three';
 import type { Game, Pose } from './types';
 import { HX } from './core';
@@ -62,32 +62,49 @@ export function buildCharacter(G: Game) {
   const eyeTexL: Record<string, THREE.Texture> = {}, eyeTexR: Record<string, THREE.Texture> = {};
   EXPR.forEach(e => { eyeTexL[e.key] = eyeTex(e.key, -1); eyeTexR[e.key] = eyeTex(e.key, 1); });
   const mouthTex = canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.fillStyle='#121212'; g.fillRect(2,3,12,2); });
-  function decal(tex, size, x, y, R) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshBasicMaterial({ map:tex, alphaTest:0.5, polygonOffset:true, polygonOffsetFactor:-4 }));
-    const z = Math.sqrt(Math.max(0.0001, R*R - x*x - y*y));
-    const n = new THREE.Vector3(x, y, z).normalize();
-    m.position.copy(n.clone().multiplyScalar(R)); m.lookAt(n.clone().multiplyScalar(R*3));
-    headGroup.add(m); return m;
+  // The face is painted straight onto the head's own texture (not stuck-on planes), so the eyes and mouth
+  // follow the curve of the head instead of floating in front of it like glasses.
+  // One texture per face (expression × mouth × blush), made once and reused, so blinking costs nothing.
+  const FW = 1536, FH = 768;
+  let fg: CanvasRenderingContext2D;
+  const headMat = skin.clone(); headMesh.material = headMat;
+  const faces = new Map<string, THREE.CanvasTexture>();
+  /** Draw an image centred on the head point (x, y) (front view, radius R), w × h in head units. */
+  function paint(img: CanvasImageSource, x: number, y: number, R: number, w: number, h: number) {
+    const z = Math.sqrt(Math.max(1e-4, R * R - x * x - y * y));
+    const theta = Math.acos(y / R), phi = Math.atan2(z, -x);           // SphereGeometry: x = -cos(phi) sin(theta), z = sin(phi) sin(theta)
+    const cx = phi / (Math.PI * 2) * FW, cy = theta / Math.PI * FH;
+    const pw = (w / R) / (Math.PI * 2) * FW / Math.sin(theta), ph = (h / R) / Math.PI * FH;
+    fg.drawImage(img, cx - pw / 2, cy - ph / 2, pw, ph);
   }
-  const eyeL = decal(eyeTexL.default, 0.215, -0.19, -0.06, 0.372);   // smaller, lower (viewer's left)
-  const eyeR = decal(eyeTexR.default, 0.27, 0.215, -0.005, 0.38);    // big, out towards the right edge
-  const mouth = decal(mouthTex, 0.07, -0.015, -0.155, 0.358);
-  const mouthMat = mouth.material as THREE.MeshBasicMaterial;
-  mouth.scale.y = 0.5;
   headGroup.position.y = 0.915;   // sheet: about 3.5 heads tall, the head is over half of souka
   const mouthTexes: Record<string, THREE.Texture> = {
     line: mouthTex,
     cat: canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.strokeStyle='#121212'; g.lineWidth=1.3; g.lineCap='round'; g.beginPath(); g.moveTo(2.5,2.5); g.quadraticCurveTo(5,7,8,3.6); g.quadraticCurveTo(11,7,13.5,2.5); g.stroke(); }),
     o: canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.strokeStyle='#121212'; g.lineWidth=1.2; g.beginPath(); g.ellipse(8,4,1.9,2.4,0,0,7); g.stroke(); }),
   };
-  function setMouth(k) {
-    S.mouth = k; mouthMat.map = mouthTexes[k]; mouthMat.needsUpdate = true;
-    const sc = k === 'cat' ? 1.45 : 1; mouth.scale.set(sc, 0.5*sc, 1);
-    G.notify();
-  }
   const blushTex = canvasTex(32, 32, (g) => { const gr = g.createRadialGradient(16,16,2,16,16,15); gr.addColorStop(0,'rgba(255,135,150,.8)'); gr.addColorStop(1,'rgba(255,135,150,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(16,16,15,11,0,0,7); g.fill(); });
-  function softDecal(t, size, x, y, R) { const m = decal(t, size, x, y, R); m.material = new THREE.MeshBasicMaterial({ map:t, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-3 }); m.scale.y = 0.7; return m; }
-  const blush = [softDecal(blushTex, 0.13, -0.24, -0.19, 0.356), softDecal(blushTex, 0.13, 0.25, -0.16, 0.356)];
+  function drawFace() {
+    const key = `${S.expr || 'default'}|${S.mouth || 'line'}|${S.acc.blush ? 1 : 0}`;
+    let tex = faces.get(key);
+    if (!tex) {
+      const c = document.createElement('canvas'); c.width = FW; c.height = FH; fg = c.getContext('2d')!;
+      paintFace();
+      tex = new THREE.CanvasTexture(c); tex.anisotropy = 4; faces.set(key, tex);
+    }
+    if (headMat.map !== tex) { headMat.map = tex; headMat.needsUpdate = true; }
+  }
+  function paintFace() {
+    fg.imageSmoothingEnabled = true;
+    fg.fillStyle = '#ffffff'; fg.fillRect(0, 0, FW, FH);
+    if (S.acc.blush) { paint(blushTex.image, -0.24, -0.19, 0.36, 0.13, 0.09); paint(blushTex.image, 0.25, -0.16, 0.36, 0.13, 0.09); }
+    const e = S.expr || 'default';
+    paint(eyeTexL[e].image, -0.19, -0.06, 0.36, 0.215, 0.215);   // smaller, lower (viewer's left)
+    paint(eyeTexR[e].image, 0.215, -0.005, 0.36, 0.27, 0.27);     // big, out towards the right edge
+    const sc = S.mouth === 'cat' ? 1.45 : 1;
+    paint(mouthTexes[S.mouth || 'line'].image, -0.015, -0.155, 0.36, 0.07 * sc, 0.035 * sc);
+  }
+  function setMouth(k) { S.mouth = k; drawFace(); G.notify(); }
   const hat = new THREE.Group();
   { const hm = new THREE.MeshPhongMaterial({ color:0xe2ad48, flatShading:true, shininess:0, specular:0, side:THREE.DoubleSide });
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.385, 10, 5, 0, Math.PI*2, 0, Math.PI*0.36), hm); hat.add(cap);
@@ -101,7 +118,7 @@ export function buildCharacter(G: Game) {
       const pd = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 10), pad); pd.rotation.z = Math.PI/2; pd.position.set(sx*0.35, -0.02, 0); phones.add(pd); }
     phones.scale.set(1, 0.94, 1); phones.visible = false; headGroup.add(phones); }
   function applyAcc() {
-    for (const b of blush) b.visible = S.acc.blush; hat.visible = S.acc.hat; phones.visible = S.acc.phones;
+    drawFace(); hat.visible = S.acc.hat; phones.visible = S.acc.phones;
     G.notify();
   }
   body.add(headGroup);
@@ -154,10 +171,9 @@ export function buildCharacter(G: Game) {
   char.position.set(HX + 3.2, 0, 4.6); char.rotation.y = 0.6; // morning: next to the bed
   scene.add(char);
 
-  const eyeMatL = eyeL.material as THREE.MeshBasicMaterial, eyeMatR = eyeR.material as THREE.MeshBasicMaterial;
   function setExpr(k: string) {
     if (S.expr === k) return;
-    S.expr = k; eyeMatL.map = eyeTexL[k]; eyeMatR.map = eyeTexR[k];
+    S.expr = k; drawFace();
     if (S.photo) G.notify();
   }
   function setPose(k: Pose) { S.pose = k; G.notify(); }
