@@ -90,7 +90,7 @@ export function Panel() {
         <section className="box">
           <span className="mode">EDIT</span>
           <dl className="keys">
-            <dt>클릭 · 드래그</dt><dd>물건 선택 · 옮기기 (빈 곳 드래그는 카메라 회전)</dd>
+            <dt>클릭 · 드래그</dt><dd>물건 선택 · 옮기기, souka를 끌어 원하는 곳에 놓기 (빈 곳 드래그는 카메라 회전)</dd>
             <dt><K>Q</K> <K>E</K></dt><dd>회전 15° (<K>Shift</K> 90°)</dd>
             <dt><K>[</K> <K>]</K></dt><dd>크기 줄이기 · 키우기</dd>
             <dt><K>Delete</K></dt><dd>창고에 넣기</dd>

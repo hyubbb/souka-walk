@@ -45,8 +45,24 @@ export function setupEdit(G: Game) {
   }
   function setNdc(e: PointerEvent) { const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); pickRay.setFromCamera(ndc, camera); }
   function editRoot(obj: THREE.Object3D | null): EditObj | null { while (obj) { if (obj.userData && obj.userData.edit) return obj.userData.edit; obj = obj.parent; } return null; }
+  /** souka herself can be picked up and put down anywhere in edit mode (she is not saved in the layout). */
+  let charDrag: { dx: number; dz: number } | null = null, charBox: THREE.BoxHelper | null = null;
+  function clampChar() {
+    const p = char.position;
+    if (S.zone === 'house') { p.x = THREE.MathUtils.clamp(p.x, HX - 2.2, HX + 14.8); p.z = THREE.MathUtils.clamp(p.z, 0.2, 14.3); return; }
+    const b = G.outBounds(); if (b) { p.x = THREE.MathUtils.clamp(p.x, b.x0, b.x1); p.z = THREE.MathUtils.clamp(p.z, b.z0, b.z1); }
+    if (S.area === 'city') { const gy = G.city.groundAt(p.x, p.z, p.y + 3); if (gy !== null) p.y = gy; }
+  }
   function pointerDown(e: PointerEvent) {
     setNdc(e);
+    const ch = pickRay.intersectObject(char, true)[0];
+    if (ch && char.visible) {
+      select(null);
+      groundPlane.constant = -char.position.y; pickRay.ray.intersectPlane(groundPlane, hitP);
+      charDrag = { dx: char.position.x - hitP.x, dz: char.position.z - hitP.z }; objDrag = null;
+      charBox = new THREE.BoxHelper(char, 0x6fd3ff); scene.add(charBox);
+      return;
+    }
     const roots = editObjs.filter((o: EditObj) => o.g.visible && !(o.hold && S.held === o.hold)).map((o: EditObj) => o.g);
     const hit = pickRay.intersectObjects(roots, true).find((h) => !G.wallGroups.some((w: THREE.Object3D) => isDesc(h.object, w)));
     const o = hit ? editRoot(hit.object) : null;
@@ -59,6 +75,12 @@ export function setupEdit(G: Game) {
   }
   function pointerMove(e: PointerEvent) {
     if (!S.drag) return;
+    if (charDrag) {
+      setNdc(e); if (!pickRay.ray.intersectPlane(groundPlane, hitP)) return;
+      char.position.x = hitP.x + charDrag.dx; char.position.z = hitP.z + charDrag.dz; clampChar();
+      charBox?.update(); S.drag = { x: e.clientX, y: e.clientY };
+      return;
+    }
     if (objDrag) {
       setNdc(e); if (!pickRay.ray.intersectPlane(groundPlane, hitP)) return;
       const o = objDrag.o, wx = hitP.x + objDrag.dx, wz = hitP.z + objDrag.dz;
@@ -72,7 +94,10 @@ export function setupEdit(G: Game) {
     const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag = { x: e.clientX, y: e.clientY };
     S.camYaw -= dx * 0.008; edit.pitch = THREE.MathUtils.clamp(edit.pitch + dy * 0.006, 0.1, 1.5);
   }
-  function pointerUp() { if (objDrag) G.resetSurfaces(); objDrag = null; }
+  function pointerUp() {
+    if (objDrag) G.resetSurfaces(); objDrag = null;
+    if (charDrag) { charDrag = null; groundPlane.constant = 0; if (charBox) { scene.remove(charBox); charBox = null; } G.notify(); }
+  }
 
   const afterChange = () => { if (S.sel) placeObj(S.sel); saveSoon(); G.resetSurfaces(); G.notify(); };
   function rotateSel(deg: number) { const o = S.sel; if (!o) return; o.g.rotation.y += deg * Math.PI / 180; afterChange(); }
