@@ -2,7 +2,7 @@ import type * as THREE from 'three';
 
 export type Zone = 'house' | 'alley';
 /** Outdoors: the alley, or Takeshiba through the ticket gate (same zone, different place). */
-export type Area = 'alley' | 'city';
+export type Area = 'alley' | 'city' | 'yokohama';
 export type Pose = 'stand' | 'think' | 'sit' | 'lie' | 'ride' | 'drive' | 'hug' | 'money' | 'count' | 'peek';
 export type SubStyle = 'dialog' | 'movie';
 export type Frame = 'wide' | 'close';

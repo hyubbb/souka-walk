@@ -115,11 +115,15 @@ export function createCore(stage: HTMLElement): Game {
   const isDesc = (o: THREE.Object3D | null, root: THREE.Object3D) => { while (o) { if (o === root) return true; o = o.parent; } return false; };
 
   const keys: Record<string, boolean> = {};
+  /** Walkable rectangle of each outdoor place (the city map has none: its ground decides). */
+  const areaBounds: Record<string, { x0: number; x1: number; z0: number; z1: number }> = { alley: { x0: -21, x1: 21, z0: -52.5, z1: 13.5 } };
+  const outBounds = () => areaBounds[S.area] || null;
+  const inOutBounds = (x: number, z: number, pad = 0) => { const b = outBounds(); return !b || (x >= b.x0 - pad && x <= b.x1 + pad && z >= b.z0 - pad && z <= b.z1 + pad); };
 
   return {
     S, ui, notify, subscribe, version: () => ver, setUi, toast,
     stage, renderer, canvas, scene, camera, rnd, canvasTex, speckle, lam,
-    colliders, dynCols, addCol, occluders, editObjs, O, E, placeObj, collide, isDesc, keys,
+    colliders, dynCols, addCol, occluders, editObjs, O, E, placeObj, collide, isDesc, keys, areaBounds, outBounds, inOutBounds,
     HX,
   };
 }

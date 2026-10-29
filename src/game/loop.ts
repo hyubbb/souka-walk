@@ -57,9 +57,10 @@ export function setupLoop(G: Game) {
         if (stuck || !collide(nx, p.z)) p.x = nx;
         if (stuck || !collide(p.x, nz)) p.z = nz;
       }
-      if (S.zone === 'alley' && S.area !== 'city') {
-        char.position.x = THREE.MathUtils.clamp(char.position.x, -21, 21);
-        char.position.z = THREE.MathUtils.clamp(char.position.z, -52.5, 13.5);
+      const ob = S.zone === 'alley' ? G.outBounds() : null;
+      if (ob) {
+        char.position.x = THREE.MathUtils.clamp(char.position.x, ob.x0, ob.x1);
+        char.position.z = THREE.MathUtils.clamp(char.position.z, ob.z0, ob.z1);
       } else if (S.zone === 'house') {
         char.position.x = THREE.MathUtils.clamp(char.position.x, HX - 2.2, HX + 14.8);
         char.position.z = THREE.MathUtils.clamp(char.position.z, 0.2, 14.3);
@@ -83,7 +84,7 @@ export function setupLoop(G: Game) {
     else if (S.held) prompt = 'C : ' + S.held.name + ' 내려놓기 · Z/X 거리';
     else if (S.seat || S.pose === 'sit' || S.pose === 'hug' || S.pose === 'count' || S.pose === 'lie') prompt = 'C : ' + (S.seat && S.seat.pose === 'stand' ? '내려오기' : '일어나기');
     else if (sp) prompt = 'C : ' + sp.label;
-    else if (S.zone === 'alley' && char.position.z < -49 && Math.abs(char.position.x) < 6) {
+    else if (S.zone === 'alley' && S.area === 'alley' && char.position.z < -49 && Math.abs(char.position.x) < 6) {
       prompt = '편의점 도착';
       if (!S.taskDone) { S.taskDone = true; G.setUi({ task: '할 일: 완료 ✓' }); G.toast('캔커피를 샀다. ……출근해야지.'); }
     }
@@ -91,7 +92,7 @@ export function setupLoop(G: Game) {
     const [hh, mm] = S.clockBase.split(':').map(Number);
     const mins = hh * 60 + mm + Math.floor(performance.now() / 4000);
     const clockTxt = `10/28 (水) ${String(Math.floor(mins / 60) % 24).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-    let room = S.area === 'city' ? '타케시바 TAKESHIBA' : '골목 ALLEY';
+    let room = S.area === 'city' ? '타케시바 TAKESHIBA' : S.area === 'yokohama' ? '요코하마 YOKOHAMA' : '골목 ALLEY';
     if (S.zone === 'house') {
       const lx = char.position.x - HX, lz = char.position.z;
       const r = G.ROOMS.find((o: any) => lx >= o.r[0] && lx <= o.r[1] && lz >= o.r[2] && lz <= o.r[3]);

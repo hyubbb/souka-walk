@@ -78,7 +78,7 @@ export function setupInteract(G: Game) {
   }
   const inBounds = (x: number, z: number) => S.zone === 'house'
     ? x >= HX - 2.2 && x <= HX + 14.8 && z >= 0.2 && z <= 14.3
-    : S.area === 'city' || (x >= -21 && x <= 21 && z >= -52.5 && z <= 13.5);
+    : G.inOutBounds(x, z);
 
   // --- carrying props and putting them on whatever surface is in front ---
   const downRay = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0);
