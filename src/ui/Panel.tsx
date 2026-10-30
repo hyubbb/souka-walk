@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useGame } from './useGame';
 import { ACC, EXPR, MOUTHS, POSES } from '../game/character';
 import { TIMES } from '../game/lighting';
@@ -23,6 +23,7 @@ const K = ({ children }: { children: ReactNode }) => <kbd>{children}</kbd>;
 /** The character-sheet style control panel next to the game. */
 export function Panel() {
   const G = useGame();
+  const layoutFile = useRef<HTMLInputElement>(null);
   if (!G) return <aside className="panel" />;
   const { S, ui } = G;
   const walking = !S.photo && !S.reels && !S.editMode;
@@ -111,6 +112,12 @@ export function Panel() {
             <button disabled={!S.sel || S.sel.spawned} onClick={() => G.edit.resetSel()}>원위치</button>
             <button onClick={() => G.edit.resetAll()}>전체 초기화</button>
             <button className="primary" onClick={() => G.edit.toggle()}>편집 끝내기 (B)</button>
+          </div>
+          <div className="row">
+            <button onClick={() => G.edit.exportLayout()}>배치 파일로 저장</button>
+            <button onClick={() => layoutFile.current?.click()}>배치 파일 불러오기</button>
+            <input ref={layoutFile} type="file" accept=".json,application/json" hidden
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) G.edit.importLayout(f); e.target.value = ''; }} />
           </div>
           {ui.resetConfirm && <p className="empty">한 번 더 누르면 꺼낸 물건은 창고로 가고, 집 가구는 처음 자리로 돌아가요.</p>}
         </section>

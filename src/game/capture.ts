@@ -112,5 +112,5 @@ export function setupCapture(G: Game) {
   }
   window.addEventListener('resize', fit);
 
-  Object.assign(G, { comp, shoot, drawComp, toggleRec, isRecording, saveShot, saveVideo, fit });
+  Object.assign(G, { saveFile, comp, shoot, drawComp, toggleRec, isRecording, saveShot, saveVideo, fit });
 }

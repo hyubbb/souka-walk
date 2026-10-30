@@ -156,7 +156,89 @@ function recolorAwnings(model: THREE.Object3D, color: number, mode: 'awning' | '
 }
 
 /** A loaded, toned, scaled model whose footprint is centred on (0,0) and whose bottom is at y = 0. */
-interface Template { root: THREE.Object3D; w: number; d: number; h: number }
+interface Template { root: THREE.Object3D; w: number; d: number; h: number; wheelR?: number }
+
+/** Car models: find the four wheels (round, low, out at the corners) and hang each on its own pivot so they can
+ *  spin (and the front pair steer). Root space: nose toward +z, bottom at y = 0. Meshes that are not clearly one
+ *  wheel (e.g. all four tyres merged into one mesh) are left alone, so the car still works, just without spinning. */
+function partBox(m: THREE.Mesh, idx: number[] | null) {
+  if (!idx) return preciseBox(m);
+  const b = new THREE.Box3(), v = new THREE.Vector3(), p = (m.geometry as THREE.BufferGeometry).attributes.position as any;
+  for (const i of idx) b.expandByPoint(v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld));
+  return b;
+}
+function rigWheels(root: THREE.Object3D, w: number, d: number, h: number): number | undefined {
+  root.updateMatrixWorld(true);
+  const quads = new Map<string, { parts: { m: THREE.Mesh; idx: number[] | null }[]; box: THREE.Box3 }>();
+  const meshes: THREE.Mesh[] = []; root.traverse((o: any) => { if (o.isMesh) meshes.push(o); });
+  const isWheel = (b: THREE.Box3) => {
+    const s = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+    return b.max.y <= h * 0.6 && s.y >= h * 0.12 && s.x <= w * 0.4
+      && Math.abs(s.y - s.z) <= Math.max(s.y, s.z) * 0.35                // round from the side
+      && Math.abs(c.x) >= w * 0.18 && Math.abs(c.z) >= d * 0.15;          // out at a corner
+  };
+  const v = new THREE.Vector3(), cen = new THREE.Vector3();
+  const splits = new Map<THREE.Mesh, { all: number[][]; used: number[][] }>();
+  for (const m of meshes) {
+    if (preciseBox(m).max.y > h * 0.6) continue;
+    // split the mesh's triangles by corner: some models merge all four tyres (or a left/right pair) into one mesh
+    const g = m.geometry as THREE.BufferGeometry, p = g.attributes.position, ix = g.index;
+    const n = ix ? ix.count : p.count, at = (i: number) => (ix ? ix.getX(i) : i);
+    const groups = new Map<string, { idx: number[]; box: THREE.Box3 }>();
+    for (let t = 0; t + 2 < n; t += 3) {
+      cen.set(0, 0, 0); const tri = [at(t), at(t + 1), at(t + 2)], pts: THREE.Vector3[] = [];
+      for (const i of tri) { v.fromBufferAttribute(p as any, i).applyMatrix4(m.matrixWorld); pts.push(v.clone()); cen.add(v); }
+      const k = `${Math.sign(cen.x) || 1},${Math.sign(cen.z) || 1}`;
+      let gr = groups.get(k); if (!gr) groups.set(k, (gr = { idx: [], box: new THREE.Box3() }));
+      gr.idx.push(...tri); for (const q of pts) gr.box.expandByPoint(q);
+    }
+    if (!groups.size || ![...groups.values()].every((gr) => isWheel(gr.box))) continue;
+    if (groups.size > 1) splits.set(m, { all: [...groups.values()].map((gr) => gr.idx), used: [] });
+    for (const [k, gr] of groups) {
+      let q = quads.get(k); if (!q) quads.set(k, (q = { parts: [], box: new THREE.Box3() }));
+      q.parts.push({ m, idx: groups.size === 1 ? null : gr.idx }); q.box.union(gr.box);
+    }
+  }
+  // per corner, the biggest round part is the tyre; only parts centred on its axle and inside it come along
+  // (so a fender or a brake line that happens to look round does not swing around with the wheel)
+  for (const q of quads.values()) {
+    const boxes = q.parts.map(({ m, idx }) => partBox(m, idx));
+    let ti = 0; boxes.forEach((b, i) => { if (b.max.y - b.min.y > boxes[ti].max.y - boxes[ti].min.y) ti = i; });
+    const tyre = boxes[ti], tc = tyre.getCenter(new THREE.Vector3()), tr = (tyre.max.y - tyre.min.y) / 2;
+    const room = tyre.clone().expandByScalar(tr * 0.08);
+    const keep = q.parts.filter((_, i) => { const c = boxes[i].getCenter(new THREE.Vector3()); return Math.hypot(c.y - tc.y, c.z - tc.z) < tr * 0.15 && room.containsBox(boxes[i]); });
+    q.parts = keep; q.box = tyre.clone();
+  }
+  if (quads.size < 2) return undefined;
+  let r = 0;
+  for (const [k, q] of quads) {
+    const c = q.box.getCenter(new THREE.Vector3()); r = Math.max(r, (q.box.max.y - q.box.min.y) / 2);
+    const steer = new THREE.Group(); steer.position.copy(c); root.add(steer);
+    const spin = new THREE.Group(); steer.add(spin);
+    steer.userData.wheelSteer = k.endsWith(',1'); spin.userData.wheelSpin = true;
+    root.updateMatrixWorld(true);
+    for (const { m, idx } of q.parts) {
+      if (!idx) { spin.attach(m); continue; }
+      // this corner's share of a merged mesh: same vertex buffers, its own triangle list
+      const src = m.geometry as THREE.BufferGeometry, ng = new THREE.BufferGeometry();
+      for (const name in src.attributes) ng.setAttribute(name, src.attributes[name]);
+      ng.setIndex(idx); splits.get(m)?.used.push(idx);
+      const part = new THREE.Mesh(ng, Array.isArray(m.material) ? m.material[0] : m.material);
+      part.matrix.copy(m.matrixWorld); part.matrix.decompose(part.position, part.quaternion, part.scale);
+      root.add(part); part.updateMatrixWorld(true); spin.attach(part);
+    }
+  }
+  // merged originals keep only the triangles that did not go to a wheel
+  for (const [m, { all, used }] of splits) {
+    if (!used.length) continue;
+    const rest = all.filter((a) => !used.includes(a)).flat();
+    if (!rest.length) { m.parent?.remove(m); continue; }
+    const ng = new THREE.BufferGeometry(), src = m.geometry as THREE.BufferGeometry;
+    for (const name in src.attributes) ng.setAttribute(name, src.attributes[name]);
+    ng.setIndex(rest); m.geometry = ng;
+  }
+  return r || undefined;
+}
 const templates = new Map<string, Promise<Template>>();
 /** Exact world box from the vertices. Box3.setFromObject (r128) unions each mesh's bounding box after rotating it,
  *  so a turned part (a car's wheels) sticks out below its real bottom and the model ends up floating. */
@@ -193,7 +275,9 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
       const b = preciseBox(model);
       model.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
       const root = new THREE.Group(); root.add(model);
-      return { root, w: b.max.x - b.min.x, d: b.max.z - b.min.z, h: b.max.y - b.min.y };
+      const t: Template = { root, w: b.max.x - b.min.x, d: b.max.z - b.min.z, h: b.max.y - b.min.y };
+      if (item.car) t.wheelR = rigWheels(root, t.w, t.d, t.h);
+      return t;
     }));
   }
   return templates.get(item.id)!;
@@ -306,7 +390,7 @@ export function setupProps(G: Game) {
       placeObj(o);
       if (item.seat) addSeatSpot(o, item, t, zone);
       if (item.occ) m.traverse((c: any) => { if (c.isMesh) G.occluders.push(c); });
-      if (item.car && G.addModelCar) G.addModelCar(o);
+      if (item.car && G.addModelCar) { (o as any).wheelR = t.wheelR; G.addModelCar(o); }
       G.resetSurfaces();
       return o;
     });

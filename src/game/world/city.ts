@@ -30,8 +30,9 @@ const CITY_DEFAULTS: [string, string, number, number, number][] = [
   ['수프라', 'carSupra', -6.5, 9.5, Math.PI / 2],
   ['프렐류드', 'carPrelude', 6.5, 7.5, -Math.PI / 2],
   ['R32', 'carR32', 6.5, 11.5, -Math.PI / 2],
-  ['역 앞 빌딩', 'jpBuilding', 4, -16, 0],
-  ['일본 주택', 'jpHouse', -16, -6, Math.PI / 2],
+  // on the flat part of the square: the block drops 7 m to the street below past its south-west edge
+  ['역 앞 빌딩', 'jpBuilding', -20, 16, 0],
+  ['일본 주택', 'jpHouse', -22, 2, Math.PI / 2],
 ];
 
 export function setupCity(G: Game) {
@@ -138,12 +139,27 @@ export function setupCity(G: Game) {
     });
     return loading;
   }
+  /** Ground for a whole footprint: the lowest of a 3×3 grid of samples, so no corner floats on a slope or a kerb.
+   *  Samples that drop away more than 1.2 m (off a ledge) are ignored, or a building would sink into the square. */
+  function footGround(o: EditObj, fromY: number): number | null {
+    const gx = o.g.position.x, gz = o.g.position.z, c0 = groundAt(gx, gz, fromY);
+    if (c0 === null) return null;
+    const s = o.size, k = o.g.scale.x; if (!s) return c0;
+    const c = Math.cos(o.g.rotation.y), sn = Math.sin(o.g.rotation.y);
+    let best = c0;
+    for (const a of [-0.45, 0, 0.45]) for (const b of [-0.45, 0, 0.45]) {
+      const lx = a * s.w * k, lz = b * s.d * k;
+      const g = groundAt(gx + lx * c + lz * sn, gz - lx * sn + lz * c, fromY);
+      if (g !== null && g < best && g > c0 - 1.2) best = g;
+    }
+    return best;
+  }
   /** Stand everything placed in the city on the ground under it. */
   function settle() {
     if (!loaded) return;
     for (const o of G.editObjs as EditObj[]) {
       if (o.off !== 0 || o.hidden || o.top || o.sticker || !inCity(o.g.position.z) || o.g.parent !== scene) continue;
-      const gy = groundAt(o.g.position.x, o.g.position.z, o.g.position.y + 2);
+      const gy = footGround(o, o.g.position.y + 2);
       if (gy !== null) o.g.position.y = gy;
     }
   }
@@ -175,5 +191,5 @@ export function setupCity(G: Game) {
     G.props.spawn('jpTicketGate', { x: arrive.x, z: arrive.z, r: 0, zone: 'alley', name: CITY_DEFAULTS[0][0] });
   }
 
-  G.city = { root, enabled, load, go, groundAt: (x: number, z: number, fromY?: number) => (loaded ? groundAt(x, z, fromY) : null), moveTo, hitFrac: (a: THREE.Vector3, b: THREE.Vector3) => (loaded ? hitFrac(a, b) : 1), settle, isLoaded: () => loaded };
+  G.city = { root, enabled, load, go, groundAt: (x: number, z: number, fromY?: number) => (loaded ? groundAt(x, z, fromY) : null), moveTo, hitFrac: (a: THREE.Vector3, b: THREE.Vector3) => (loaded ? hitFrac(a, b) : 1), settle, footGround: (o: EditObj, fromY: number) => (loaded ? footGround(o, fromY) : null), isLoaded: () => loaded };
 }

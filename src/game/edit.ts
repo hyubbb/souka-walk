@@ -90,7 +90,7 @@ export function setupEdit(G: Game) {
       if (o.dyn) o.off = (o.g.parent === scene) ? 0 : HX;
       o.g.position.x = wx - o.off; o.g.position.z = wz;
       if (o.hold || o.top) o.g.position.y = G.surfaceY(wx, wz, o.g, 1.5);   // small things ride on tables, shelves, sofas
-      else if (S.area === 'city' && o.off === 0 && !o.fixedY) { const gy = G.city.groundAt(wx, wz, o.g.position.y + 3); if (gy !== null) o.g.position.y = gy; }
+      else if (S.area === 'city' && o.off === 0 && !o.fixedY) { const gy = G.city.footGround(o, o.g.position.y + 3); if (gy !== null) o.g.position.y = gy; }
       placeObj(o); saveSoon(); S.drag = { x: e.clientX, y: e.clientY };
       return;
     }
@@ -175,5 +175,26 @@ export function setupEdit(G: Game) {
     G.resetSurfaces();
   }
 
-  G.edit = Object.assign(edit, { skyView, toggle: toggleEdit, select, saveSoon, pointerDown, pointerMove, pointerUp, onKey, update, rotateSel, scaleSel, putAwaySel, resetSel, resetAll, loadLayout });
+  // ---- moving a layout to another computer: a small JSON file with everything placed (and souka's size) ----
+  function exportLayout() {
+    clearTimeout(saveT); saveLayout();
+    let layout: any = null; try { layout = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null'); } catch { layout = null; }
+    let size = 1; try { size = Number(localStorage.getItem('souka-size')) || 1; } catch { /* ignore */ }
+    const file = { app: 'souka-walk', v: 1, saved: new Date().toISOString(), size, layout: layout || { objs: {}, spawned: [] } };
+    const d = new Date(), stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    G.saveFile(new Blob([JSON.stringify(file)], { type: 'application/json' }), `souka-layout-${stamp}.json`);
+  }
+  async function importLayout(f: File) {
+    let file: any;
+    try { file = JSON.parse(await f.text()); } catch { file = null; }
+    if (!file || file.app !== 'souka-walk' || !file.layout) { G.toast('souka 배치 파일이 아니에요.'); return; }
+    try {
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(file.layout));
+      if (file.size) localStorage.setItem('souka-size', String(file.size));
+    } catch { G.toast('이 브라우저에 저장할 수 없어요.'); return; }
+    G.toast('배치를 불러왔어요. 다시 여는 중……');
+    setTimeout(() => location.reload(), 600);
+  }
+
+  G.edit = Object.assign(edit, { exportLayout, importLayout, skyView, toggle: toggleEdit, select, saveSoon, pointerDown, pointerMove, pointerUp, onKey, update, rotateSel, scaleSel, putAwaySel, resetSel, resetAll, loadLayout });
 }
