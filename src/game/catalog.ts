@@ -11,6 +11,8 @@ export interface CatalogItem {
   /** Big enough to hide souka: the outdoor camera cuts it away like the alley buildings. */
   occ?: boolean;
   len?: number; ry?: number; car?: boolean;
+  /** Paint part of a palette model another colour (e.g. the shop's awnings black). */
+  recolor?: 'awningBlack';
 }
 export const CATS: { key: CatKey; label: string }[] = [
   { key: 'living', label: '거실' }, { key: 'bed', label: '침실' }, { key: 'kitchen', label: '주방' }, { key: 'bath', label: '욕실' },
@@ -187,6 +189,7 @@ export const CATALOG: CatalogItem[] = [
   { id: 'p2Flat', file: 'pack2/town/Flat', name: '맨션', cat: 'building', s: 3.2, occ: true },
   { id: 'p2Flat2', file: 'pack2/town/Flat2', name: '필로티 맨션', cat: 'building', s: 3.2, occ: true },
   { id: 'p2Shop', file: 'pack2/town/Shop', name: '가게', cat: 'building', s: 3.2, occ: true },
+  { id: 'p2ShopBlack', file: 'pack2/town/Shop', name: '가게 (검정 어닝)', cat: 'building', s: 3.2, occ: true, recolor: 'awningBlack' },
   { id: 'p2Hospital', file: 'pack2/town/Hospital', name: '병원', cat: 'building', s: 3.2, occ: true },
   { id: 'euBuilding1', file: 'pack2/euro/Building1_Small', name: '노란 빌딩', cat: 'building', s: 1.9, occ: true },
   { id: 'euBuilding2', file: 'pack2/euro/Building2_Small', name: '하늘색 빌딩', cat: 'building', s: 1.9, occ: true },

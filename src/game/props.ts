@@ -87,6 +87,52 @@ export function toneMaterial(m: any): THREE.Material {
   toned.set(m.uuid, out); return out;
 }
 
+/** The town kit paints everything from a 32×32 palette; the shop's awnings share the red swatch with its roof trim
+ *  and door frame. Awning triangles are the red ones that stick out past the walls below the roof: move those
+ *  into a second material group so they can take another colour. */
+function recolorAwnings(model: THREE.Object3D, color: number) {
+  model.updateMatrixWorld(true);
+  const meshes: THREE.Mesh[] = []; model.traverse((o: any) => { if (o.isMesh) meshes.push(o); });
+  const v = new THREE.Vector3();
+  for (const mesh of meshes) {
+    const g = mesh.geometry as THREE.BufferGeometry, p = g.attributes.position, uv = g.attributes.uv, idx = g.index;
+    if (!uv) continue;
+    const n = idx ? idx.count : p.count, at = (i: number) => (idx ? idx.getX(i) : i);
+    // quantized models store UVs as normalized integers, which r128's getX() returns raw
+    const norm = (a: any) => (!a.normalized ? 1 : a.array instanceof Int16Array ? 1 / 32767 : a.array instanceof Uint16Array ? 1 / 65535 : a.array instanceof Int8Array ? 1 / 127 : a.array instanceof Uint8Array ? 1 / 255 : 1);
+    const un = norm(uv), pn = norm(p);
+    const tris: { red: boolean; beige: boolean; c: THREE.Vector3 }[] = [];
+    for (let t = 0; t < n; t += 3) {
+      const c = new THREE.Vector3(); let red = true, beige = true;
+      for (let k = 0; k < 3; k++) {
+        const i = at(t + k), u = uv.getX(i) * un, w = uv.getY(i) * un;
+        if (!(u >= 0.5 && w >= 0.75)) red = false;
+        if (!(u < 0.5 && w >= 0.75)) beige = false;
+        c.add(v.set(p.getX(i) * pn, p.getY(i) * pn, p.getZ(i) * pn).applyMatrix4(mesh.matrixWorld).multiplyScalar(1 / 3));
+      }
+      tris.push({ red, beige, c });
+    }
+    const walls = new THREE.Box3(); for (const t of tris) if (t.beige) walls.expandByPoint(t.c);
+    if (walls.isEmpty()) continue;
+    // relative to the wall box: awnings hang in the upper band of the walls, out at the edges, and the front
+    // pair leaves the door frame (centre) alone; the roof trim is above the band
+    const cx = (walls.min.x + walls.max.x) / 2, cz = (walls.min.z + walls.max.z) / 2;
+    const hx = (walls.max.x - walls.min.x) / 2, hz = (walls.max.z - walls.min.z) / 2, h = walls.max.y - walls.min.y;
+    const isAwning = (t: (typeof tris)[number]) => {
+      if (!t.red) return false;
+      const fy = (t.c.y - walls.min.y) / h, ax = Math.abs(t.c.x - cx) / hx, az = Math.abs(t.c.z - cz) / hz;
+      return fy > 0.6 && fy < 1.15 && ((az > 0.72 && ax > 0.2) || ax > 0.76);
+    };
+    const keep: number[] = [], awn: number[] = [];
+    tris.forEach((t, k) => (isAwning(t) ? awn : keep).push(at(k * 3), at(k * 3 + 1), at(k * 3 + 2)));
+    if (!awn.length) continue;
+    const ng = g.clone(); ng.setIndex([...keep, ...awn]); ng.clearGroups();
+    ng.addGroup(0, keep.length, 0); ng.addGroup(keep.length, awn.length, 1);
+    const base = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+    mesh.geometry = ng; mesh.material = [base, new THREE.MeshLambertMaterial({ color })];
+  }
+}
+
 /** A loaded, toned, scaled model whose footprint is centred on (0,0) and whose bottom is at y = 0. */
 interface Template { root: THREE.Object3D; w: number; d: number; h: number }
 const templates = new Map<string, Promise<Template>>();
@@ -100,6 +146,7 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
         if (!o.geometry.attributes.normal) o.geometry = flatShade(o.geometry);
         o.material = Array.isArray(o.material) ? o.material.map(toneMaterial) : toneMaterial(o.material);
       });
+      if (item.recolor === 'awningBlack') recolorAwnings(model, 0x232325);
       if (item.ry) { model.rotation.y = item.ry; model.updateMatrixWorld(true); }
       const raw = new THREE.Box3().setFromObject(model);
       const rawH = Math.max(0.001, raw.max.y - raw.min.y), rawL = Math.max(0.001, raw.max.x - raw.min.x, raw.max.z - raw.min.z);
