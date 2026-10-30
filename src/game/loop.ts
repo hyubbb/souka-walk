@@ -26,7 +26,7 @@ export function setupLoop(G: Game) {
     let ix = (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0);
     let iz = (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0);
     let dx = 0, dz = 0, moving = false, faceMove = true;
-    if (S.reels) {
+    if (S.reels && S.reelCam === 'front') {
       // reels: walk toward the camera, A/D turn; the camera backs away in front
       const turn = (keys['a'] || keys['arrowleft'] ? 1 : 0) - (keys['d'] || keys['arrowright'] ? 1 : 0);
       if (S.pose === 'stand' && !S.seat) char.rotation.y += turn * 2.0 * dt;
@@ -112,7 +112,7 @@ export function setupLoop(G: Game) {
       if (keys['r']) pan.y += dt * 1.5;
       pan.clampLength(0, 6);
     }
-    if (S.reels) {
+    if (S.reels && S.reelCam === 'front') {
       pitch = 0.16;
       if (!S.drag) { let d = char.rotation.y - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); S.camYaw += d * Math.min(1, dt * 3); }
     }

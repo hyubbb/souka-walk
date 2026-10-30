@@ -122,8 +122,14 @@ export function Panel() {
       {S.reels && (
         <section className="box">
           <span className="mode">REELS · 9:16</span>
+          <div className="row" role="group" aria-label="카메라 시점">
+            <button aria-pressed={S.reelCam === 'front'} onClick={() => G.setReelCam('front')}>정면 고정 (F)</button>
+            <button aria-pressed={S.reelCam === 'free'} onClick={() => G.setReelCam('free')}>자유 시점 (F)</button>
+          </div>
           <dl className="keys">
-            <dt><K>W</K> <K>A</K> <K>D</K></dt><dd>앞으로 걷기 · 방향 틀기 (카메라가 앞에서 물러남)</dd>
+            {S.reelCam === 'front'
+              ? <><dt><K>W</K> <K>A</K> <K>D</K></dt><dd>앞으로 걷기 · 방향 틀기 (카메라가 앞에서 물러남)</dd></>
+              : <><dt><K>W</K> <K>A</K> <K>S</K> <K>D</K></dt><dd>걷기 (평소처럼)</dd><dt>드래그</dt><dd>카메라를 원하는 각도로 돌리기</dd></>}
             <dt><K>Shift</K> · 휠</dt><dd>달리기 · 카메라 거리</dd>
             <dt><K>V</K></dt><dd>녹화 시작 / 정지</dd>
           </dl>

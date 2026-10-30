@@ -69,6 +69,8 @@ export interface State {
   acc: { blush: boolean; hat: boolean; phones: boolean };
   photo: boolean;
   reels: boolean;
+  /** reels camera: front = stays in front of souka, free = drag it anywhere and walk like normal */
+  reelCam: 'front' | 'free';
   editMode: boolean;
   guide: boolean;
   seat: Seat | null;

@@ -58,7 +58,7 @@ export function TouchControls() {
       </div>
       <div className="tbtns">
         {S.photo ? btn('찰칵', ' ', 'big')
-          : S.reels ? btn(S.recording ? '■ 정지' : '● 녹화', 'v', 'big')
+          : S.reels ? <>{btn(S.reelCam === 'front' ? '자유 시점' : '정면 고정', 'f')}{btn(S.recording ? '■ 정지' : '● 녹화', 'v', 'big')}</>
           : S.editMode ? null
           : <>
               {S.held && btn('가까이', 'z')}

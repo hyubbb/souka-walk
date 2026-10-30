@@ -12,7 +12,7 @@ export interface CatalogItem {
   occ?: boolean;
   len?: number; ry?: number; car?: boolean;
   /** Paint part of a palette model another colour (e.g. the shop's awnings black). */
-  recolor?: 'awningBlack' | 'allBlack';
+  recolor?: 'awningBlack' | 'allBlack' | 'stripeBlack';
 }
 export const CATS: { key: CatKey; label: string }[] = [
   { key: 'living', label: '거실' }, { key: 'bed', label: '침실' }, { key: 'kitchen', label: '주방' }, { key: 'bath', label: '욕실' },
@@ -191,6 +191,7 @@ export const CATALOG: CatalogItem[] = [
   { id: 'p2Shop', file: 'pack2/town/Shop', name: '가게', cat: 'building', s: 3.2, occ: true },
   { id: 'p2ShopBlack', file: 'pack2/town/Shop', name: '가게 (검정 어닝)', cat: 'building', s: 3.2, occ: true, recolor: 'awningBlack' },
   { id: 'p2ShopAllBlack', file: 'pack2/town/Shop', name: '가게 (올블랙)', cat: 'building', s: 3.2, occ: true, recolor: 'allBlack' },
+  { id: 'p2ShopStripeBlack', file: 'pack2/town/Shop', name: '가게 (블랙·흰검 어닝)', cat: 'building', s: 3.2, occ: true, recolor: 'stripeBlack' },
   { id: 'p2Hospital', file: 'pack2/town/Hospital', name: '병원', cat: 'building', s: 3.2, occ: true },
   { id: 'euBuilding1', file: 'pack2/euro/Building1_Small', name: '노란 빌딩', cat: 'building', s: 1.9, occ: true },
   { id: 'euBuilding2', file: 'pack2/euro/Building2_Small', name: '하늘색 빌딩', cat: 'building', s: 1.9, occ: true },
