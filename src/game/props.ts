@@ -19,6 +19,23 @@ export const AVAILABLE = CATALOG.filter((c) => !!urlFor(c.file));
 
 /** Models reduced without normals (to simplify further): rebuild them flat-shaded, low-poly style.
  *  Reads through getX() so interleaved attributes work (BufferGeometry.toNonIndexed in r128 does not). */
+/** Quantized models (KHR_mesh_quantization) keep positions as normalized integers: the GPU scales them, but
+ *  three r128's CPU side (raycasts for stickers, surfaces, bounding boxes) reads the raw numbers and misses.
+ *  Turn those attributes back into plain floats once, at load. */
+export function dequantize(g: THREE.BufferGeometry) {
+  for (const name of ['position', 'normal']) {
+    const a: any = g.attributes[name]; if (!a || !a.normalized) continue;
+    const k = a.array instanceof Int16Array ? 1 / 32767 : a.array instanceof Uint16Array ? 1 / 65535 : a.array instanceof Int8Array ? 1 / 127 : a.array instanceof Uint8Array ? 1 / 255 : 1;
+    const out = new Float32Array(a.count * a.itemSize);
+    for (let i = 0; i < a.count; i++) for (let c = 0; c < a.itemSize; c++) {
+      const v = c === 0 ? a.getX(i) : c === 1 ? a.getY(i) : c === 2 ? a.getZ(i) : a.getW(i);
+      out[i * a.itemSize + c] = Math.max(-1, v * k);
+    }
+    g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize));
+  }
+  g.computeBoundingBox(); g.computeBoundingSphere();
+}
+
 export function flatShade(g: THREE.BufferGeometry) {
   const idx = g.index, p = g.attributes.position, uv = g.attributes.uv, n = idx ? idx.count : p.count;
   const P = new Float32Array(n * 3), U = uv ? new Float32Array(n * 2) : null;
@@ -146,6 +163,7 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
       const model = gltf.scene;
       model.traverse((o: any) => {
         if (!o.isMesh) return;
+        dequantize(o.geometry);
         if (!o.geometry.attributes.normal) o.geometry = flatShade(o.geometry);
         o.material = Array.isArray(o.material) ? o.material.map(toneMaterial) : toneMaterial(o.material);
       });
