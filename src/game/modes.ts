@@ -40,7 +40,7 @@ export function setupModes(G: Game) {
     if (G.isRecording()) G.toggleRec();
     S.reels = !S.reels;
     G.setUi({ prompt: '' });
-    if (S.reels) { setFrame('close'); S.camDist = 3.0; S.camYaw = char.rotation.y; } else setFrame('wide');
+    if (S.reels) { setFrame('close'); S.camDist = 3.0; S.camYaw = char.rotation.y; } else { setFrame('wide'); S.walkPitch[S.zone] = Math.max(0.04, S.walkPitch[S.zone]); }
     applyRenderSize(); G.fit(); G.notify(); stage.focus();
   }
 
