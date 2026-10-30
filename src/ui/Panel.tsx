@@ -21,6 +21,14 @@ function Choices<T>({ items, isOn, onPick, label }: { items: readonly T[]; isOn:
 const K = ({ children }: { children: ReactNode }) => <kbd>{children}</kbd>;
 
 /** The character-sheet style control panel next to the game. */
+function toggleFullscreen(G: any) {
+  const d: any = document;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const el: any = document.documentElement; const p = (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el); p?.catch?.(() => G.toast('여기서는 전체 화면이 안 돼요.')); if (!p && !el.webkitRequestFullscreen) G.toast('여기서는 전체 화면이 안 돼요.'); }
+  } catch { G.toast('여기서는 전체 화면이 안 돼요.'); }
+}
+
 export function Panel() {
   const G = useGame();
   const layoutFile = useRef<HTMLInputElement>(null);
@@ -29,15 +37,30 @@ export function Panel() {
   const walking = !S.photo && !S.reels && !S.editMode;
 
   return (
-    <aside className="panel">
+    <aside id="side-panel" className={'panel' + (ui.big ? ' drawer' : '') + (ui.big && ui.menuOpen ? ' open' : '')} aria-hidden={ui.big && !ui.menuOpen ? true : undefined}>
       <div>
         <h1>souka 출근길</h1>
         <p className="sub">PROTOTYPE 0.9 · 집 → 골목 → 편의점<br />A QUIET WALK TO WORK</p>
       </div>
 
+      <section className="box">
+        <h2>화면</h2>
+        <div className="row">
+          <button aria-pressed={ui.big} onClick={() => G.setView({ big: !ui.big })}>크게 보기</button>
+          <button onClick={() => toggleFullscreen(G)}>전체 화면</button>
+        </div>
+        <div className="row">
+          <button aria-pressed={ui.showClock} onClick={() => G.setView({ showClock: !ui.showClock })}>날짜·장소</button>
+          <button aria-pressed={ui.showTask} onClick={() => G.setView({ showTask: !ui.showTask })}>할 일</button>
+          <button aria-pressed={ui.showTalk} onClick={() => G.setView({ showTalk: !ui.showTalk })}>혼잣말·안내</button>
+        </div>
+      </section>
+
       {walking && (
         <section className="box">
           <span className="mode">WALK</span>
+          <details>
+          <summary>조작법</summary>
           <dl className="keys">
             <dt><K>WASD</K> <K>←↑↓→</K></dt><dd>걷기 · 운전</dd>
             <dt><K>Shift</K></dt><dd>달리기</dd>
@@ -47,7 +70,9 @@ export function Panel() {
             <dt><K>L</K></dt><dd>라이트 켜기 / 끄기 (탑승 중)</dd>
             <dt><K>Z</K> <K>X</K></dt><dd>들고 있는 물건 놓을 거리</dd>
             <dt><K>P</K> <K>R</K> <K>B</K></dt><dd>사진 · 릴스 녹화 · 편집 모드 (창고)</dd>
+            <dt><K>M</K></dt><dd>메뉴 열기 / 닫기 (크게 보기)</dd>
           </dl>
+          </details>
           <div className="row">
             <button className="primary" onClick={() => G.togglePhoto()}>사진 모드 (P)</button>
             <button onClick={() => G.toggleReels()}>릴스 모드 (R)</button>

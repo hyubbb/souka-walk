@@ -21,7 +21,9 @@ export function createCore(stage: HTMLElement): Game {
   const ui: UiState = {
     clock: '10/28 (水) 08:12', room: '1. BEDROOM 침실', task: '할 일: 현관에서 출근하기',
     prompt: '', toast: '', fading: false, rec: '', album: [], shotUrl: null, video: null, resetConfirm: false,
+    big: true, menuOpen: false, showClock: true, showTask: true, showTalk: true,
   };
+  try { Object.assign(ui, JSON.parse(localStorage.getItem('souka-view') || '{}'), { menuOpen: false }); } catch { /* private mode */ }
 
   // --- tiny store so React re-renders when the game changes something it shows ---
   const listeners = new Set<() => void>();

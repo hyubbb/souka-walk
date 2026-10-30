@@ -22,6 +22,7 @@ export function setupModes(G: Game) {
   function applyRenderSize() {
     const q = G.QUALITY[S.qualIdx];
     if (S.reels) { renderer.setSize(Math.round(q.w * 4 / 3), q.w, false); camera.aspect = 4 / 3; }
+    else if (G.viewAspect && !S.photo) { renderer.setSize(Math.round(q.h * G.viewAspect), q.h, false); camera.aspect = G.viewAspect; }
     else { renderer.setSize(q.w, q.h, false); camera.aspect = W / H; }
     camera.updateProjectionMatrix();
   }
@@ -32,7 +33,7 @@ export function setupModes(G: Game) {
     photoPan.set(0, 0, 0);
     if (S.photo) { S.speedNow = 0; G.setUi({ prompt: '' }); }
     else { G.setExpr('default'); S.guide = false; if (!S.reels) setFrame('wide'); }
-    G.notify(); stage.focus();
+    G.fit(); applyRenderSize(); G.notify(); stage.focus();
   }
   function toggleReels() {
     if (S.editMode) return;
@@ -44,10 +45,17 @@ export function setupModes(G: Game) {
     applyRenderSize(); G.fit(); G.notify(); stage.focus();
   }
 
-    function setReelCam(m: 'front' | 'free') {
+    /** Window-filling view on/off and the HUD bits; remembered in this browser. */
+  function setView(patch: Partial<typeof G.ui>) {
+    G.setUi(patch);
+    const { big, showClock, showTask, showTalk } = G.ui;
+    try { localStorage.setItem('souka-view', JSON.stringify({ big, showClock, showTask, showTalk })); } catch { /* private mode */ }
+    if ('big' in patch) { document.body.classList.toggle('big', G.ui.big); G.fit(); }
+  }
+  function setReelCam(m: 'front' | 'free') {
     S.reelCam = m;
     if (m === 'front') S.camDist = Math.min(S.camDist, 8);
     G.notify();
   }
-  Object.assign(G, { setReelCam, photoPan, minD, maxD, setFrame, setSubStyle, setSubs, toggleGuide, applyRenderSize, togglePhoto, toggleReels });
+  Object.assign(G, { setView, setReelCam, photoPan, minD, maxD, setFrame, setSubStyle, setSubs, toggleGuide, applyRenderSize, togglePhoto, toggleReels });
 }

@@ -5,6 +5,7 @@ import { Overlays } from './ui/Overlays';
 import { Panel } from './ui/Panel';
 import { Modals } from './ui/Modals';
 import { TouchControls } from './ui/TouchControls';
+import { MenuButton } from './ui/MenuButton';
 
 export default function App() {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,7 @@ export default function App() {
         </div>
         <Panel />
       </div>
+      <MenuButton />
       <Modals />
     </GameContext.Provider>
   );

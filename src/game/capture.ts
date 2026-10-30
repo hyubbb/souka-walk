@@ -97,12 +97,18 @@ export function setupCapture(G: Game) {
 
   /** Size the visible canvas (4:5 game or 9:16 reels) to the window. */
   function fit() {
+    const big = G.ui.big;
+    document.body.classList.toggle('big', big);
     const panelBeside = window.innerWidth >= 760;
-    const availW = (panelBeside ? window.innerWidth - 320 - 20 : window.innerWidth) - 32;
-    const availH = (panelBeside ? window.innerHeight : window.innerHeight * 0.8) - 32;
-    const ratio = S.reels ? 16 / 9 : 1.25;
-    const ch = Math.max(250, Math.min(availH, availW * ratio));
-    const cw = ch / ratio;
+    const availW = big ? window.innerWidth : (panelBeside ? window.innerWidth - 320 - 20 : window.innerWidth) - 32;
+    const availH = big ? window.innerHeight : (panelBeside ? window.innerHeight : window.innerHeight * 0.8) - 32;
+    // big screen while walking / editing: the picture takes the window's shape; photos stay 4:5, reels 9:16
+    const fill = big && !S.photo && !S.reels;
+    const ratio = fill ? availH / availW : S.reels ? 16 / 9 : 1.25;
+    const ch = fill ? availH : Math.max(250, Math.min(availH, availW * ratio));
+    const cw = fill ? availW : ch / ratio;
+    const aspect = fill ? cw / ch : 0;
+    if (aspect !== (G.viewAspect || 0)) { G.viewAspect = aspect; G.applyRenderSize?.(); }
     const el = S.reels ? comp : canvas;
     el.style.width = cw + 'px'; el.style.height = ch + 'px';
     canvas.style.display = S.reels ? 'none' : 'block';
