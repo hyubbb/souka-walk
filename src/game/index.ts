@@ -10,6 +10,7 @@ import { setupVehicles } from './vehicles';
 import { setupCity } from './world/city';
 import { setupYokohama } from './world/yokohama';
 import { setupProps } from './props';
+import { setupStickers } from './stickers';
 import { setupCapture } from './capture';
 import { setupModes } from './modes';
 import { setupEdit } from './edit';
@@ -28,6 +29,7 @@ export function createGame(stage: HTMLElement): Game {
   buildCharacter(G);
   setupInteract(G);
   setupProps(G);
+  setupStickers(G);
   setupVehicles(G);
   setupCity(G);
   setupYokohama(G);

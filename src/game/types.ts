@@ -36,6 +36,9 @@ export interface EditObj {
   /** Height came from the saved layout: do not re-settle it. */
   keepY?: boolean;
   size?: { w: number; d: number; h: number };
+  /** A text sticker (its words and look) and its spin around the surface normal. */
+  sticker?: import('./stickers').StickerData;
+  stickerSpin?: number;
 }
 
 export interface Holdable { obj: THREE.Object3D; name: string; hold: [number, number, number]; rx: number }

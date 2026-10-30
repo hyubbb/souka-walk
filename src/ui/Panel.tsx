@@ -5,6 +5,7 @@ import { TIMES } from '../game/lighting';
 import { FRAMES, SUB_STYLES } from '../game/modes';
 import { QUALITY } from '../game/quality';
 import { Warehouse } from './Warehouse';
+import { StickerBox } from './StickerBox';
 
 const SIZE_MIN = 0.4, SIZE_MAX = 2.5, SIZE_STEP = 0.1;
 
@@ -115,6 +116,7 @@ export function Panel() {
         </section>
       )}
 
+      {S.editMode && <StickerBox />}
       {S.editMode && <Warehouse />}
 
       {S.reels && (
