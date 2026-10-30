@@ -90,7 +90,7 @@ export function toneMaterial(m: any): THREE.Material {
 /** The town kit paints everything from a 32×32 palette; the shop's awnings share the red swatch with its roof trim
  *  and door frame. Awning triangles are the red ones that stick out past the walls below the roof: move those
  *  into a second material group so they can take another colour. */
-function recolorAwnings(model: THREE.Object3D, color: number) {
+function recolorAwnings(model: THREE.Object3D, color: number, all = false) {
   model.updateMatrixWorld(true);
   const meshes: THREE.Mesh[] = []; model.traverse((o: any) => { if (o.isMesh) meshes.push(o); });
   const v = new THREE.Vector3();
@@ -101,16 +101,17 @@ function recolorAwnings(model: THREE.Object3D, color: number) {
     // quantized models store UVs as normalized integers, which r128's getX() returns raw
     const norm = (a: any) => (!a.normalized ? 1 : a.array instanceof Int16Array ? 1 / 32767 : a.array instanceof Uint16Array ? 1 / 65535 : a.array instanceof Int8Array ? 1 / 127 : a.array instanceof Uint8Array ? 1 / 255 : 1);
     const un = norm(uv), pn = norm(p);
-    const tris: { red: boolean; beige: boolean; c: THREE.Vector3 }[] = [];
+    const tris: { red: boolean; beige: boolean; white: boolean; c: THREE.Vector3 }[] = [];
     for (let t = 0; t < n; t += 3) {
-      const c = new THREE.Vector3(); let red = true, beige = true;
+      const c = new THREE.Vector3(); let red = true, beige = true, white = true;
       for (let k = 0; k < 3; k++) {
         const i = at(t + k), u = uv.getX(i) * un, w = uv.getY(i) * un;
         if (!(u >= 0.5 && w >= 0.75)) red = false;
         if (!(u < 0.5 && w >= 0.75)) beige = false;
+        if (!(u >= 0.5 && w < 0.375)) white = false;
         c.add(v.set(p.getX(i) * pn, p.getY(i) * pn, p.getZ(i) * pn).applyMatrix4(mesh.matrixWorld).multiplyScalar(1 / 3));
       }
-      tris.push({ red, beige, c });
+      tris.push({ red, beige, white, c });
     }
     const walls = new THREE.Box3(); for (const t of tris) if (t.beige) walls.expandByPoint(t.c);
     if (walls.isEmpty()) continue;
@@ -119,9 +120,11 @@ function recolorAwnings(model: THREE.Object3D, color: number) {
     const cx = (walls.min.x + walls.max.x) / 2, cz = (walls.min.z + walls.max.z) / 2;
     const hx = (walls.max.x - walls.min.x) / 2, hz = (walls.max.z - walls.min.z) / 2, h = walls.max.y - walls.min.y;
     const isAwning = (t: (typeof tris)[number]) => {
-      if (!t.red) return false;
       const fy = (t.c.y - walls.min.y) / h, ax = Math.abs(t.c.x - cx) / hx, az = Math.abs(t.c.z - cz) / hz;
-      return fy > 0.6 && fy < 1.15 && ((az > 0.72 && ax > 0.2) || ax > 0.76);
+      const band = fy > 0.6 && fy < 1.15 && ((az > 0.72 && ax > 0.2) || ax > 0.76);
+      // all = every red part (roof trim, door frame, awnings) plus the awnings' white stripes; glass stays
+      if (all) return t.red || (t.white && band);
+      return t.red && band;
     };
     const keep: number[] = [], awn: number[] = [];
     tris.forEach((t, k) => (isAwning(t) ? awn : keep).push(at(k * 3), at(k * 3 + 1), at(k * 3 + 2)));
@@ -147,6 +150,7 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
         o.material = Array.isArray(o.material) ? o.material.map(toneMaterial) : toneMaterial(o.material);
       });
       if (item.recolor === 'awningBlack') recolorAwnings(model, 0x232325);
+      if (item.recolor === 'allBlack') recolorAwnings(model, 0x232325, true);
       if (item.ry) { model.rotation.y = item.ry; model.updateMatrixWorld(true); }
       const raw = new THREE.Box3().setFromObject(model);
       const rawH = Math.max(0.001, raw.max.y - raw.min.y), rawL = Math.max(0.001, raw.max.x - raw.min.x, raw.max.z - raw.min.z);
