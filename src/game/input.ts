@@ -46,19 +46,22 @@ export function setupInput(G: Game) {
     if (S.editMode) G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + d * 2.4 * Math.max(1, G.edit.dist / 20), 2, G.edit.MAX);
     else S.camDist = THREE.MathUtils.clamp(S.camDist + d, G.minD(), G.maxD());
   };
-  canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+  // In reels mode the 9:16 compositor canvas sits on top of the game canvas, so listen on both.
+  const surf = { addEventListener: (t: string, f: any) => { canvas.addEventListener(t, f); compCanvas()?.addEventListener(t, f); } };
+  const compCanvas = () => stage.querySelector('canvas.comp') as HTMLCanvasElement | null;
+  surf.addEventListener('pointerdown', (e: PointerEvent) => {
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (touches.size === 2) { pinch = pinchDist(); S.drag = null; if (S.editMode) G.edit.pointerUp(); return; }
       if (touches.size > 2) return;
     }
-    stage.focus(); S.drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId);
+    stage.focus(); S.drag = { x: e.clientX, y: e.clientY }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     if (S.editMode) G.edit.pointerDown(e);
   });
   const touchEnd = (e: PointerEvent) => { touches.delete(e.pointerId); if (touches.size < 2) pinch = 0; };
-  canvas.addEventListener('pointerup', touchEnd);
-  canvas.addEventListener('pointercancel', touchEnd);
-  canvas.addEventListener('pointermove', (e: PointerEvent) => {
+  surf.addEventListener('pointerup', touchEnd);
+  surf.addEventListener('pointercancel', touchEnd);
+  surf.addEventListener('pointermove', (e: PointerEvent) => {
     if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch) { const d = pinchDist(); zoom((pinch - d) * 0.02); pinch = d; return; }
     if (S.editMode) { G.edit.pointerMove(e); return; }
@@ -66,10 +69,10 @@ export function setupInput(G: Game) {
     const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag = { x: e.clientX, y: e.clientY };
     S.camYaw -= dx * 0.008;
     if (S.photo) S.camPitch = THREE.MathUtils.clamp(S.camPitch + dy * 0.006, -0.25, 1.45);
-    else if (!S.reels || S.reelCam === 'free') S.walkPitch[S.zone] = THREE.MathUtils.clamp(S.walkPitch[S.zone] + dy * 0.006, 0.04, 1.45);
+    else if (!S.reels || S.reelCam === 'free') S.walkPitch[S.zone] = THREE.MathUtils.clamp(S.walkPitch[S.zone] + dy * 0.006, S.reels ? -0.2 : 0.04, 1.45);
   });
-  canvas.addEventListener('pointerup', () => { S.drag = null; if (S.editMode) G.edit.pointerUp(); });
-  canvas.addEventListener('pointercancel', () => { S.drag = null; });
+  surf.addEventListener('pointerup', () => { S.drag = null; if (S.editMode) G.edit.pointerUp(); });
+  surf.addEventListener('pointercancel', () => { S.drag = null; });
   stage.addEventListener('wheel', (e: WheelEvent) => {
     e.preventDefault();
     if (S.editMode) { G.edit.dist = THREE.MathUtils.clamp(G.edit.dist + e.deltaY * 0.012 * Math.max(1, G.edit.dist / 20), 2, G.edit.MAX); return; }
