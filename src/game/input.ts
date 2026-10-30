@@ -18,6 +18,7 @@ export function setupInput(G: Game) {
     if ((k === 'p' && !S.reels) || (k === 'escape' && S.photo)) G.togglePhoto();
     if ((k === 'r' && !S.photo) || (k === 'escape' && S.reels)) G.toggleReels();
     if (k === 'v' && S.reels) G.toggleRec();
+    if (k === 'f' && S.reels) G.setReelCam(S.reelCam === 'front' ? 'free' : 'front');
     if (k === 'b' && !S.photo && !S.reels) { G.edit.toggle(); return; }
     if (!S.photo && S.held && k === 'z') S.reach = Math.max(0.45, S.reach - 0.15);
     if (!S.photo && S.held && k === 'x') S.reach = Math.min(1.6, S.reach + 0.15);
@@ -65,7 +66,7 @@ export function setupInput(G: Game) {
     const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag = { x: e.clientX, y: e.clientY };
     S.camYaw -= dx * 0.008;
     if (S.photo) S.camPitch = THREE.MathUtils.clamp(S.camPitch + dy * 0.006, -0.25, 1.45);
-    else if (!S.reels) S.walkPitch[S.zone] = THREE.MathUtils.clamp(S.walkPitch[S.zone] + dy * 0.006, 0.04, 1.45);
+    else if (!S.reels || S.reelCam === 'free') S.walkPitch[S.zone] = THREE.MathUtils.clamp(S.walkPitch[S.zone] + dy * 0.006, 0.04, 1.45);
   });
   canvas.addEventListener('pointerup', () => { S.drag = null; if (S.editMode) G.edit.pointerUp(); });
   canvas.addEventListener('pointercancel', () => { S.drag = null; });

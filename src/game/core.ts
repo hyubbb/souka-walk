@@ -10,7 +10,7 @@ export function createCore(stage: HTMLElement): Game {
   const S: State = {
     zone: 'house', area: 'alley', size: 1, pose: 'stand', expr: 'default', mouth: 'line',
     acc: { blush: false, hat: false, phones: false },
-    photo: false, reels: false, editMode: false, guide: false,
+    photo: false, reels: false, reelCam: 'front', editMode: false, guide: false,
     seat: null, seatY: 0, held: null, riding: null, reach: 0.75,
     camYaw: 0.75, camPitch: 0.75, camDist: 6.4, walkPitch: { house: 0.75, alley: 0.32 }, frame: 'wide',
     walkPhase: 0, speedNow: 0, blinkT: 2.5, idleT: 0,

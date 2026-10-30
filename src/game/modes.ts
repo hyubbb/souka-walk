@@ -13,7 +13,7 @@ export function setupModes(G: Game) {
   const photoPan = new THREE.Vector3();
 
   const minD = () => S.photo ? CLOSE_MIN * 0.75 : S.frame === 'close' ? CLOSE_MIN : CLOSE_MIN * 1.1;
-  const maxD = () => S.reels ? 8 : S.photo ? 20 : 15;
+  const maxD = () => S.reels ? (S.reelCam === 'free' ? 15 : 8) : S.photo ? 20 : 15;
   function setFrame(k: Frame) { S.frame = k; S.camDist = k === 'close' ? 2.7 : 6.0; G.notify(); }
   function setSubStyle(k: SubStyle) { S.subStyle = k; G.notify(); }
   function setSubs(patch: Partial<typeof S.subs>) { Object.assign(S.subs, patch); G.notify(); }
@@ -44,5 +44,10 @@ export function setupModes(G: Game) {
     applyRenderSize(); G.fit(); G.notify(); stage.focus();
   }
 
-  Object.assign(G, { photoPan, minD, maxD, setFrame, setSubStyle, setSubs, toggleGuide, applyRenderSize, togglePhoto, toggleReels });
+    function setReelCam(m: 'front' | 'free') {
+    S.reelCam = m;
+    if (m === 'front') S.camDist = Math.min(S.camDist, 8);
+    G.notify();
+  }
+  Object.assign(G, { setReelCam, photoPan, minD, maxD, setFrame, setSubStyle, setSubs, toggleGuide, applyRenderSize, togglePhoto, toggleReels });
 }

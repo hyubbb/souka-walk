@@ -107,7 +107,7 @@ export function toneMaterial(m: any): THREE.Material {
 /** The town kit paints everything from a 32×32 palette; the shop's awnings share the red swatch with its roof trim
  *  and door frame. Awning triangles are the red ones that stick out past the walls below the roof: move those
  *  into a second material group so they can take another colour. */
-function recolorAwnings(model: THREE.Object3D, color: number, all = false) {
+function recolorAwnings(model: THREE.Object3D, color: number, mode: 'awning' | 'all' | 'stripe' = 'awning') {
   model.updateMatrixWorld(true);
   const meshes: THREE.Mesh[] = []; model.traverse((o: any) => { if (o.isMesh) meshes.push(o); });
   const v = new THREE.Vector3();
@@ -140,7 +140,9 @@ function recolorAwnings(model: THREE.Object3D, color: number, all = false) {
       const fy = (t.c.y - walls.min.y) / h, ax = Math.abs(t.c.x - cx) / hx, az = Math.abs(t.c.z - cz) / hz;
       const band = fy > 0.6 && fy < 1.15 && ((az > 0.72 && ax > 0.2) || ax > 0.76);
       // all = every red part (roof trim, door frame, awnings) plus the awnings' white stripes; glass stays
-      if (all) return t.red || (t.white && band);
+      if (mode === 'all') return t.red || (t.white && band);
+      // stripe = every red part black, but the awnings keep their white stripes (white / black / white…)
+      if (mode === 'stripe') return t.red;
       return t.red && band;
     };
     const keep: number[] = [], awn: number[] = [];
@@ -181,7 +183,8 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
         o.material = Array.isArray(o.material) ? o.material.map(toneMaterial) : toneMaterial(o.material);
       });
       if (item.recolor === 'awningBlack') recolorAwnings(model, 0x232325);
-      if (item.recolor === 'allBlack') recolorAwnings(model, 0x232325, true);
+      if (item.recolor === 'allBlack') recolorAwnings(model, 0x232325, 'all');
+      if (item.recolor === 'stripeBlack') recolorAwnings(model, 0x232325, 'stripe');
       if (item.ry) { model.rotation.y = item.ry; model.updateMatrixWorld(true); }
       const raw = preciseBox(model);
       const rawH = Math.max(0.001, raw.max.y - raw.min.y), rawL = Math.max(0.001, raw.max.x - raw.min.x, raw.max.z - raw.min.z);
