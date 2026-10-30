@@ -156,6 +156,19 @@ function recolorAwnings(model: THREE.Object3D, color: number, all = false) {
 /** A loaded, toned, scaled model whose footprint is centred on (0,0) and whose bottom is at y = 0. */
 interface Template { root: THREE.Object3D; w: number; d: number; h: number }
 const templates = new Map<string, Promise<Template>>();
+/** Exact world box from the vertices. Box3.setFromObject (r128) unions each mesh's bounding box after rotating it,
+ *  so a turned part (a car's wheels) sticks out below its real bottom and the model ends up floating. */
+function preciseBox(root: THREE.Object3D) {
+  const box = new THREE.Box3(), v = new THREE.Vector3();
+  root.updateMatrixWorld(true);
+  root.traverse((o: any) => {
+    if (!o.isMesh || !o.geometry?.attributes?.position) return;
+    const p = o.geometry.attributes.position;
+    for (let i = 0; i < p.count; i++) box.expandByPoint(v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld));
+  });
+  return box.isEmpty() ? new THREE.Box3().setFromObject(root) : box;
+}
+
 function loadTemplate(item: CatalogItem): Promise<Template> {
   if (!templates.has(item.id)) {
     const kit = item.file.split('/')[0];
@@ -170,11 +183,11 @@ function loadTemplate(item: CatalogItem): Promise<Template> {
       if (item.recolor === 'awningBlack') recolorAwnings(model, 0x232325);
       if (item.recolor === 'allBlack') recolorAwnings(model, 0x232325, true);
       if (item.ry) { model.rotation.y = item.ry; model.updateMatrixWorld(true); }
-      const raw = new THREE.Box3().setFromObject(model);
+      const raw = preciseBox(model);
       const rawH = Math.max(0.001, raw.max.y - raw.min.y), rawL = Math.max(0.001, raw.max.x - raw.min.x, raw.max.z - raw.min.z);
       const s = item.len ? item.len / rawL : item.h ? item.h / rawH : (item.s ?? 2);
       model.scale.multiplyScalar(s);
-      const b = new THREE.Box3().setFromObject(model);
+      const b = preciseBox(model);
       model.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
       const root = new THREE.Group(); root.add(model);
       return { root, w: b.max.x - b.min.x, d: b.max.z - b.min.z, h: b.max.y - b.min.y };
