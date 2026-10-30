@@ -142,7 +142,7 @@ export function setupCity(G: Game) {
   function settle() {
     if (!loaded) return;
     for (const o of G.editObjs as EditObj[]) {
-      if (o.off !== 0 || o.hidden || o.top || !inCity(o.g.position.z) || o.g.parent !== scene) continue;
+      if (o.off !== 0 || o.hidden || o.top || o.sticker || !inCity(o.g.position.z) || o.g.parent !== scene) continue;
       const gy = groundAt(o.g.position.x, o.g.position.z, o.g.position.y + 2);
       if (gy !== null) o.g.position.y = gy;
     }

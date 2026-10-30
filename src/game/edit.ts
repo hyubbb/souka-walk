@@ -85,6 +85,7 @@ export function setupEdit(G: Game) {
     }
     if (objDrag) {
       setNdc(e); if (!pickRay.ray.intersectPlane(groundPlane, hitP)) return;
+      if (objDrag.o.sticker) { if (G.stickers.stickTo(objDrag.o, pickRay)) { selHelper?.update(); saveSoon(); } S.drag = { x: e.clientX, y: e.clientY }; return; }
       const o = objDrag.o, wx = hitP.x + objDrag.dx, wz = hitP.z + objDrag.dz;
       if (o.dyn) o.off = (o.g.parent === scene) ? 0 : HX;
       o.g.position.x = wx - o.off; o.g.position.z = wz;
@@ -102,7 +103,7 @@ export function setupEdit(G: Game) {
   }
 
   const afterChange = () => { if (S.sel) placeObj(S.sel); saveSoon(); G.resetSurfaces(); G.notify(); };
-  function rotateSel(deg: number) { const o = S.sel; if (!o) return; o.g.rotation.y += deg * Math.PI / 180; afterChange(); }
+  function rotateSel(deg: number) { const o = S.sel; if (!o) return; if (o.sticker) G.stickers.spinSel(o, deg); else o.g.rotation.y += deg * Math.PI / 180; afterChange(); }
   function scaleSel(f: number) {
     const o = S.sel; if (!o) return;
     const s = THREE.MathUtils.clamp(o.g.scale.x * f, 0.3 * (o.baseScale || 1), 4 * (o.baseScale || 1));
@@ -144,12 +145,14 @@ export function setupEdit(G: Game) {
   function saveLayout() {
     const data: Layout = { objs: {}, spawned: [] };
     for (const o of editObjs as EditObj[]) {
+      if (o.sticker && o.uid) { const q = o.g.quaternion; data.spawned.push({ ...pack(o), uid: o.uid, id: '__sticker', zone: zoneOf(o), q: [q.x, q.y, q.z, q.w].map((v) => +v.toFixed(4)), st: o.sticker, sp: o.stickerSpin || 0 } as any); continue; }
       if (o.spawned) { if (o.item && o.uid) data.spawned.push({ ...pack(o), uid: o.uid, id: o.item.id, zone: zoneOf(o) }); continue; }
       if (!o.persist) continue;
       const moved = Math.abs(o.g.position.x - o.init.x) > 1e-3 || Math.abs(o.g.position.z - o.init.z) > 1e-3 || Math.abs(o.g.rotation.y - o.init.r) > 1e-3 || Math.abs(o.g.scale.x - (o.baseScale || 1)) > 1e-3 || o.hidden || zoneOf(o) !== (o.off === HX ? 'house' : 'alley');
       if (moved) data.objs[o.name] = { ...pack(o), h: o.hidden ? 1 : 0 };
     }
-    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(data)); } catch { /* storage unavailable */ }
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(data)); }
+    catch { if (data.spawned.some((s: any) => s.st?.image)) G.toast('저장 공간이 꽉 찼어요. 붙인 사진을 몇 개 창고에 넣어 주세요.'); }
   }
   function loadLayout() {
     let data: Layout | null = null;
@@ -161,7 +164,11 @@ export function setupEdit(G: Game) {
       o.g.position.set(d.x, o.fixedY || d.y === undefined ? o.g.position.y : d.y, d.z); if (d.y !== undefined) o.keepY = true; o.g.rotation.y = d.r; o.g.scale.setScalar(d.s || o.baseScale || 1); o.hidden = !!d.h;
       placeObj(o);
     }
-    for (const sp of data.spawned || []) {
+    for (const sp of (data.spawned || []) as any[]) {
+      if (sp.id === '__sticker') {
+        const so = G.stickers.spawn(sp.st, { pos: [sp.x + (sp.zone === 'house' ? HX : 0), sp.y, sp.z], q: sp.q, s: sp.s, zone: sp.zone, uid: sp.uid });
+        so.stickerSpin = sp.sp || 0; continue;
+      }
       const o = G.props.spawn(sp.id, { x: sp.x + (sp.zone === 'house' ? HX : 0), z: sp.z, y: sp.y, r: sp.r, s: sp.s, zone: sp.zone, uid: sp.uid, spawned: true });
       if (o) o.keepY = true;   // keep the height it was saved at (it may be sitting on a table)
     }
