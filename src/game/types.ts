@@ -111,6 +111,12 @@ export interface UiState {
   shotUrl: string | null;
   video: { url: string; note: string } | null;
   resetConfirm: boolean;
+  /** view options (saved in this browser) */
+  big: boolean;          // game fills the whole window, menu becomes a drawer
+  menuOpen: boolean;
+  showClock: boolean;    // date + place, top left
+  showTask: boolean;     // "할 일", top right
+  showTalk: boolean;     // souka's one-liners / arrival notes in the middle of the screen
 }
 
 export type Game = {

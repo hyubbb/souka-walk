@@ -14,6 +14,7 @@ export function setupInput(G: Game) {
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     keys[k] = true;
+    if (k === 'm' && G.ui.big) { G.setUi({ menuOpen: !G.ui.menuOpen }); return; }
     if (S.editMode) { G.edit.onKey(e, k); return; }
     if ((k === 'p' && !S.reels) || (k === 'escape' && S.photo)) G.togglePhoto();
     if ((k === 'r' && !S.photo) || (k === 'escape' && S.reels)) G.toggleReels();
