@@ -94,6 +94,9 @@ export function setupVehicles(G: Game) {
     const v = { type:'car', name:o.label, g, o, hideRider:true, seat:{ x:0, z:0, y:0 }, heading:g.rotation.y, speed:0, steer:0, lights:false, wheels:[], fronts:[], wheelR:0.3,
       spec:{ max:8.5, rev:-2.8, acc:5, brake:9, turn:1.2 }, circles:[[0, -d*sc*0.32, r], [0, 0, r], [0, d*sc*0.32, r]],
       size:[w*sc, d*sc], grab:d*sc*0.5 + 0.7, exit:w*sc*0.5 + 0.5, seatY:0, lamps:[], tails:[], lampOn:null, lampOff:null, spot, beam:bm };
+    // wheels rigged by props.rigWheels: spin pivots turn with speed, the front steer pivots turn with the wheel
+    g.traverse((c) => { if (c.userData.wheelSpin) v.wheels.push(c); if (c.userData.wheelSteer) v.fronts.push(c); });
+    if (o.wheelR) v.wheelR = o.wheelR * sc;
     vehicles.push(v); return v;
   }
   /** Parked outdoors and not put away (warehouse cars can also sit in the house as decoration). */
