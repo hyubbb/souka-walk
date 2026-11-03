@@ -71,6 +71,8 @@ export interface State {
   reels: boolean;
   /** which home the indoor zone is: the main house (alley) or the Yokohama apartment */
   home: 'main' | 'yoko';
+  jumpY: number;
+  jumpV: number;
   /** reels camera: front = stays in front of souka, free = drag it anywhere and walk like normal */
   reelCam: 'front' | 'free';
   editMode: boolean;
@@ -118,7 +120,8 @@ export interface UiState {
   menuOpen: boolean;
   showClock: boolean;    // date + place, top left
   showTask: boolean;     // "할 일", top right
-  showTalk: boolean;     // souka's one-liners / arrival notes in the middle of the screen
+  showTalk: boolean;
+  rotIdx: number;        // Q/E camera turn speed (index into ROT_SPEEDS)     // souka's one-liners / arrival notes in the middle of the screen
 }
 
 export type Game = {

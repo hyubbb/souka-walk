@@ -10,7 +10,7 @@ export function createCore(stage: HTMLElement): Game {
   const S: State = {
     zone: 'house', area: 'alley', size: 1, pose: 'stand', expr: 'default', mouth: 'line',
     acc: { blush: false, hat: false, phones: false },
-    photo: false, reels: false, home: 'main', reelCam: 'front', editMode: false, guide: false,
+    photo: false, reels: false, home: 'main', jumpY: 0, jumpV: 0, reelCam: 'front', editMode: false, guide: false,
     seat: null, seatY: 0, held: null, riding: null, reach: 0.75,
     camYaw: 0.75, camPitch: 0.75, camDist: 6.4, walkPitch: { house: 0.75, alley: 0.32 }, frame: 'wide',
     walkPhase: 0, speedNow: 0, blinkT: 2.5, idleT: 0,
@@ -21,7 +21,7 @@ export function createCore(stage: HTMLElement): Game {
   const ui: UiState = {
     clock: '10/28 (水) 08:12', room: '1. BEDROOM 침실', task: '할 일: 현관에서 출근하기',
     prompt: '', toast: '', fading: false, rec: '', album: [], shotUrl: null, video: null, resetConfirm: false,
-    big: true, menuOpen: false, showClock: true, showTask: true, showTalk: true,
+    big: true, menuOpen: false, showClock: true, showTask: true, showTalk: true, rotIdx: 1,
   };
   try { Object.assign(ui, JSON.parse(localStorage.getItem('souka-view') || '{}'), { menuOpen: false }); } catch { /* private mode */ }
 

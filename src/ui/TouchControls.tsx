@@ -64,6 +64,7 @@ export function TouchControls() {
               {S.held && btn('가까이', 'z')}
               {S.held && btn('멀리', 'x')}
               {S.riding && btn(S.riding.lights ? '라이트 끄기' : '라이트', 'l')}
+              {!S.riding && btn('점프', ' ')}
               {btn(S.riding ? '내리기' : '행동', 'c', 'big')}
             </>}
       </div>
