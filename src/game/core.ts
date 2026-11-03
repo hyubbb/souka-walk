@@ -109,8 +109,11 @@ export function createCore(stage: HTMLElement): Game {
     }
     o.g.visible = !o.hidden;
   }
+  /** Extra walls that are not boxes (a river or a street turned at an angle): return true where souka cannot stand. */
+  const blockers: ((x: number, z: number) => boolean)[] = [];
   function collide(x: number, z: number) {
     const r = 0.24;
+    for (const f of blockers) if (f(x, z)) return true;
     for (const list of [colliders, dynCols]) for (const c of list) if (x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r) return true;
     return false;
   }
@@ -125,7 +128,7 @@ export function createCore(stage: HTMLElement): Game {
   return {
     S, ui, notify, subscribe, version: () => ver, setUi, toast,
     stage, renderer, canvas, scene, camera, rnd, canvasTex, speckle, lam,
-    colliders, dynCols, addCol, occluders, editObjs, O, E, placeObj, collide, isDesc, keys, areaBounds, outBounds, inOutBounds,
+    colliders, dynCols, blockers, addCol, occluders, editObjs, O, E, placeObj, collide, isDesc, keys, areaBounds, outBounds, inOutBounds,
     HX,
   };
 }
