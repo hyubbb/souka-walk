@@ -13,7 +13,8 @@ import type { Game, Spot } from '../types';
 
 /** World offset of this place (far to the west, out of sight of the alley and the house). */
 export const YO = { x: -600, z: 0 };
-const BOUNDS = { x0: -92, x1: 92, z0: -87, z1: 56 };
+// x1 reaches down the river to Koganecho; the south-east beyond the river block is walled off (see KOGANE)
+const BOUNDS = { x0: -92, x1: 332, z0: -101, z1: 56 };
 /** Souka's front door (local x / z): home is south of Route 21, the door faces north. */
 const HOME = { x: -14, z: 15.75 };
 const DOOR = { x: -15, z: 10.6 };   // straight across the road from the MaxValu sign
@@ -484,6 +485,122 @@ export function setupYokohama(G: Game) {
     const tr = lam({ color: 0xc4272d }), trTop = lam({ color: 0xb7b2a8 }), trSide = lam({ map: trainT });
     for (let i = 0; i < 4; i++) box(-30 + i * 18.4, 7.6, vz, 18, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
     fillBlock(-90, 68, vz - 18, vz - 4, 10, 26);
+  }
+
+
+  // ---------- downstream to Koganecho (黄金町) ----------
+  // The river keeps going east (downstream). North bank: the 白金町 / 黄金町 side with the Keikyu viaduct and
+  // Koganecho station, art studios tucked under the tracks; south bank: the 末吉町 side with the cherry-tree
+  // promenade and a river-side street. Bridges in their real order: 栄橋, 太田橋 (wide, Edo-style lanterns),
+  // 末吉橋, 黄金橋. Further on (日ノ出町 → 桜木町) comes later.
+  {
+    const X0 = 100, X1 = 336, L = X1 - X0, cx = (X0 + X1) / 2;
+    const vz = RZ0 - 16, rz = (RZ0 + RZ1) / 2, SZ = RZ1 + 7;
+    const KB = [
+      { x: 125, w: 7, name: '栄橋' }, { x: 170, w: 14, name: '太田橋', lantern: true },
+      { x: 225, w: 7, name: '末吉橋' }, { x: 280, w: 8, name: '黄金橋' },
+    ];
+    // ground (the river channel stays open)
+    flat(cx, (RZ1 - 20) / 2, L, -20 - RZ1, lam({ map: rep(groundT, L / 3, 5) }), -0.02);
+    flat(cx, (RZ0 - 130) / 2, L, RZ0 + 130, lam({ map: rep(groundT, L / 3, 15) }), -0.02);
+    // river, banks, promenades
+    const waterT = canvasTex(64, 64, (g, w, h) => { speckle(g, w, h, '#3f6f74', 0.12, 0.4); g.strokeStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 18; i++) { const y = rnd() * h, x = rnd() * w; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 6 + rnd() * 10, y); g.stroke(); } });
+    flat(cx, rz, L, RZ1 - RZ0, lam({ map: rep(waterT, L / 6.6, 2) }), -1.7);
+    const wallT = canvasTex(32, 16, (g, w, h) => { speckle(g, w, h, '#9b968b', 0.18, 0.6); g.fillStyle = 'rgba(0,0,0,.2)'; for (let y = 0; y < 16; y += 4) g.fillRect(0, y, 32, 1); });
+    for (const z of [RZ0, RZ1]) { const m = mesh(new THREE.PlaneGeometry(L, 1.8), lam({ map: rep(wallT, L / 5, 1) }), cx, -0.85, z); m.rotation.y = z === RZ1 ? Math.PI : 0; }
+    pave(cx, RZ1 + 2.2, L, 4.4); pave(cx, RZ0 - 2.6, L, 5.2);
+    const rail = lam({ color: 0x6d7a72 });
+    let x0 = X0;
+    for (const [g0, g1] of [...KB.map((b) => [b.x - b.w / 2, b.x + b.w / 2]), [X1, X1]]) {
+      if (g0 > x0) {
+        col((x0 + g0) / 2, rz, g0 - x0, RZ1 - RZ0);
+        for (const z of [RZ1 - 0.15, RZ0 + 0.15]) {
+          box((x0 + g0) / 2, 1.0, z, g0 - x0, 0.08, 0.08, rail);
+          for (let px = x0 + 1; px < g0; px += 2) box(px, 0, z, 0.08, 1.05, 0.08, rail);
+        }
+      }
+      x0 = g1;
+    }
+    // the cherry trees of the Ōoka River promenade (both banks)
+    for (let x = X0 + 3; x <= X1 - 3; x += 7) {
+      if (KB.some((b) => Math.abs(x - b.x) < b.w / 2 + 2)) continue;
+      tree(x, RZ1 + 1.6, 1.0); tree(x + 3.5, RZ0 - 1.8, 0.95);
+    }
+    // bridges
+    const span = RZ1 - RZ0 + 0.6;
+    for (const b of KB) {
+      box(b.x, -0.35, rz, b.w, 0.35, span, lam({ map: rep(asphaltT, b.w / 2, 6) }));
+      const side = lam({ color: b.lantern ? 0x9c968a : 0xb8b2a6 });
+      for (const sx of [-1, 1]) {
+        const xx = b.x + sx * (b.w / 2 - 0.12);
+        box(xx, 0, rz, 0.24, 0.95, span, side); col(xx, rz, 0.24, span);
+      }
+      if (b.lantern) {
+        // 太田橋: four iron posts with Edo-style lanterns (lit in the evening)
+        for (const sx of [-1, 1]) for (const z of [RZ1 + 0.3, RZ0 - 0.3]) {
+          const px = b.x + sx * (b.w / 2 - 0.12);
+          mesh(new THREE.CylinderGeometry(0.1, 0.14, 3.2, 6), black, px, 1.6, z);
+          lampHeads.push(mesh(new THREE.BoxGeometry(0.42, 0.55, 0.42), lampOff, px, 3.45, z));
+          mesh(new THREE.ConeGeometry(0.4, 0.3, 4), black, px, 3.88, z).rotation.y = Math.PI / 4;
+          col(px, z, 0.3, 0.3);
+        }
+      }
+      // name plate on the south-east post, read from the promenade
+      const nT = canvasTex(64, 16, (g) => { g.fillStyle = '#e9e3d2'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#2f2f2f'; g.font = 'bold 11px serif'; g.textAlign = 'center'; g.fillText(b.name, 32, 12); });
+      mesh(new THREE.PlaneGeometry(1.4, 0.36), lam({ map: nT }), b.x + b.w / 2 + 0.01, 0.75, RZ1 + 0.45).rotation.y = Math.PI / 2;
+      // the street carries on across both banks
+      road(b.x, (SZ + 2.5 + -28) / 2, b.w, -28 - SZ - 2.5);
+      road(b.x, (RZ0 - 5.2 + RZ0 - 10.1) / 2, b.w, 4.9);
+    }
+    // streets on both banks
+    road(cx, SZ, L, 5); road(cx, RZ0 - 7.6, L, 5);
+    for (let x = X0 + 8; x < X1; x += 16) if (!KB.some((b) => Math.abs(x - b.x) < b.w / 2 + 1.5)) streetLamp(x, SZ + 3, 0, -1);
+    // south bank: 末吉町 blocks between the bridge streets, walled off behind (the map ends there)
+    const cuts = [97, ...KB.flatMap((b) => [b.x - b.w / 2 - 0.5, b.x + b.w / 2 + 0.5]), X1];
+    for (let i = 0; i < cuts.length; i += 2) fillBlock(cuts[i], cuts[i + 1], SZ + 3.2, -28.5, 8, 22);
+    col(214, -27.4, 244, 1); col(95.2, -44, 1, 34);
+    // north bank: the Keikyu viaduct carries on, with Koganecho station on it
+    const viaduct = lam({ color: 0xb4afa4 });
+    box(cx, 6.5, vz, L, 1.1, 6, viaduct, true);
+    for (let x = X0 + 2; x <= X1; x += 12) { box(x - 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); box(x + 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); }
+    const ST0 = 200, ST1 = 262, stc = (ST0 + ST1) / 2;
+    box(stc, 6.5, vz, ST1 - ST0, 1.1, 12, viaduct, true);                      // wider deck for the platforms
+    for (const sz of [-1, 1]) {
+      box(stc, 7.6, vz + sz * 4.6, ST1 - ST0 - 2, 0.9, 2.6, lam({ color: 0xa9a49a }), true);       // platform
+      box(stc, 10.6, vz + sz * 4.4, ST1 - ST0 - 6, 0.18, 3.4, lam({ color: 0x5b5f63 }), true);     // canopy
+      for (let x = ST0 + 5; x < ST1 - 3; x += 8) mesh(new THREE.BoxGeometry(0.15, 2.1, 0.15), steel, x, 9.55, vz + sz * 5.4);
+      box(stc, 7.6, vz + sz * 5.9, ST1 - ST0 - 2, 1.2, 0.08, lam({ color: 0xd9d6cc }), true);       // platform fence
+    }
+    // a red Keikyu train standing at the platform
+    const trainT = canvasTex(64, 16, (g) => { g.fillStyle = '#c4272d'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#efe9df'; g.fillRect(0, 9, 64, 2); g.fillStyle = '#2d3640'; for (let x = 3; x < 64; x += 8) g.fillRect(x, 2, 6, 5); });
+    const tr = lam({ color: 0xc4272d }), trTop = lam({ color: 0xb7b2a8 }), trSide = lam({ map: trainT });
+    for (let i = 0; i < 3; i++) box(ST0 + 6 + 9.25 + i * 18.6, 7.6, vz, 18.4, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
+    // station building under the tracks, entrance facing the river
+    const SB0 = 222, SB1 = 250, sbc = (SB0 + SB1) / 2;
+    box(sbc, 0, vz, SB1 - SB0, 5.6, 6.4, lam({ color: 0xe4e0d6 }), true); col(sbc, vz, SB1 - SB0, 6.4);
+    mesh(new THREE.PlaneGeometry(9, 2.6), glassDark, sbc, 1.3, vz + 3.22);
+    const gateT = canvasTex(64, 16, (g) => { g.fillStyle = '#20252b'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#7fd0ff'; for (let x = 4; x < 64; x += 12) g.fillRect(x, 6, 6, 3); });
+    mesh(new THREE.PlaneGeometry(8.6, 1.0), lam({ map: gateT }), sbc, 0.5, vz + 3.25);
+    const sT = canvasTex(256, 48, (g) => {
+      g.fillStyle = '#1f3c6e'; g.fillRect(0, 0, 256, 48); g.fillStyle = '#d7262e'; g.fillRect(0, 40, 256, 8);
+      g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.fillText('黄金町', 14, 30); g.font = 'bold 15px sans-serif'; g.fillText('Koganecho Sta.', 120, 22); g.font = '11px sans-serif'; g.fillText('京急線', 120, 36);
+    });
+    mesh(new THREE.PlaneGeometry(9.6, 1.8), lam({ map: sT }), sbc, 4.4, vz + 3.24);
+    box(stc, 6.0, vz + 6.06, ST1 - ST0, 0.5, 0.1, red);   // red stripe along the station side
+    SEATS.push({ zone: 'alley', at: [YO.x + sbc, YO.z + vz + 4.4], r: 2.2, label: '黄金町駅 개찰구',
+      act: () => toast('黄金町駅. 다음은 히노데초, 그다음은 사쿠라기초.') } as Spot);
+    // under the tracks east of the station: small galleries and studios (Koganecho Bazaar style)
+    const SHOPS = ['GALLERY', 'STUDIO 1', 'café 黄金', 'ART SPACE', 'STUDIO 2', 'BOOKS', 'STUDIO 3', 'BAR'];
+    const SHOP_COLS = ['#efe6d2', '#3b4b5c', '#d9c3a0', '#f2f0ea', '#5a6a58', '#c9b8a6', '#2f2f33', '#7d3b3b'];
+    SHOPS.forEach((nm, i) => {
+      const x = 268 + i * 8.2; if (x > X1 - 4) return;
+      box(x, 0, vz, 7.4, 3.4, 5.2, lam({ color: new THREE.Color(SHOP_COLS[i]).getHex() }), true); col(x, vz, 7.4, 5.2);
+      mesh(new THREE.PlaneGeometry(4.2, 2.3), glassDark, x - 0.8, 1.25, vz + 2.62);
+      const t = canvasTex(64, 16, (g) => { g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#222'; g.font = 'bold 10px sans-serif'; g.textAlign = 'center'; g.fillText(nm, 32, 11); });
+      mesh(new THREE.PlaneGeometry(3.2, 0.7), lam({ map: t }), x, 2.95, vz + 2.63);
+    });
+    // and the buildings behind the viaduct
+    fillBlock(68, X1, vz - 18, vz - 4, 10, 26);
   }
 
   // street lamps follow the alley's lamp level (evening / night)
