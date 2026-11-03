@@ -494,7 +494,7 @@ export function setupYokohama(G: Game) {
     const vz = RZ0 - 16;
     const viaduct = lam({ color: 0xb4afa4 });
     box(0, 6.5, vz, 184, 1.1, 6, viaduct, true);
-    for (let x = -90; x <= 90; x += 12) { box(x - 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); box(x + 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); }
+    for (let x = -90; x <= 90; x += 12) { if (Math.abs(x - 75) < 9) continue; box(x - 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); box(x + 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); }
     const trainT = canvasTex(64, 16, (g) => { g.fillStyle = '#c4272d'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#efe9df'; g.fillRect(0, 9, 64, 2); g.fillStyle = '#2d3640'; for (let x = 3; x < 64; x += 8) g.fillRect(x, 2, 6, 5); });
     const tr = lam({ color: 0xc4272d }), trTop = lam({ color: 0xb7b2a8 }), trSide = lam({ map: trainT });
     for (let i = 0; i < 4; i++) box(-30 + i * 18.4, 7.6, vz, 18, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
@@ -576,15 +576,31 @@ export function setupYokohama(G: Game) {
     // the station is on the viaduct: at street level there is only the entrance hall at the east end (by
     // 藤棚浦舟通り) on the north half, so the south half under the tracks stays open to walk through
     const SB0 = 103, SB1 = 115.5, sbc = (SB0 + SB1) / 2, hz = vz - 1.6;
-    box(sbc, 0, hz, SB1 - SB0, 5.6, 3.2, lam({ color: 0xe4e0d6 }), true); col(sbc, hz, SB1 - SB0, 3.2);
-    mesh(new THREE.PlaneGeometry(8, 2.6), glassDark, sbc, 1.3, hz + 1.62);
+    const brickT = canvasTex(32, 32, (g) => { g.fillStyle = '#b48f62'; g.fillRect(0, 0, 32, 32); for (let y = 0; y < 32; y += 4) { g.fillStyle = 'rgba(70,50,30,.35)'; g.fillRect(0, y, 32, 1); for (let x = (y / 4) % 2 ? 0 : 4; x < 32; x += 8) g.fillRect(x, y, 1, 4); } for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(${rnd() < 0.5 ? '255,240,210' : '60,40,20'},.12)`; g.fillRect(rnd() * 32 | 0, rnd() * 32 | 0, 3, 2); } });
+    const brick = lam({ map: rep(brickT, (SB1 - SB0) / 2, 2.8) }), concrete = lam({ color: 0xc9c6bd });
+    box(sbc, 0, hz, SB1 - SB0, 5.6, 3.2, [brick, brick, concrete, concrete, brick, brick], true); col(sbc, hz, SB1 - SB0, 3.2);
+    box(sbc, 2.6, hz + 1.9, SB1 - SB0 + 0.4, 0.35, 0.8, lam({ color: 0x8a8d90 }));        // flat canopy over the doors
+    mesh(new THREE.PlaneGeometry(3.2, 2.4), glassDark, sbc + 2.5, 1.2, hz + 1.62);           // entrance
+    mesh(new THREE.PlaneGeometry(1.6, 2.2), glassDark, sbc - 4, 1.1, hz + 1.62);             // side doors
+    for (let k = 0; k < 2; k++) box(sbc + 2.5, k * 0.12, hz + 1.85 + (1 - k) * 0.3, 3.6, 0.12, 0.6 - k * 0.3, concrete);   // steps
+    // chunky concrete piers with haunches carry the station deck (the south half stays a walkway)
+    for (const px of [ST0 + 3, ST0 + 15, ST0 + 27, ST1 - 1.6]) {
+      box(px, 0, vz + 2.2, 1.6, 5.2, 1.6, concrete, true); col(px, vz + 2.2, 1.6, 1.6);
+      for (const sx of [-1, 1]) { const h = box(px + sx * 1.1, 4.6, vz + 2.2, 1.2, 0.9, 1.6, concrete); h.rotation.z = sx * 0.6; }
+    }
     const gateT = canvasTex(64, 16, (g) => { g.fillStyle = '#20252b'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#7fd0ff'; for (let x = 4; x < 64; x += 12) g.fillRect(x, 6, 6, 3); });
     mesh(new THREE.PlaneGeometry(7.6, 1.0), lam({ map: gateT }), sbc, 0.5, hz + 1.65);
-    const sT = canvasTex(256, 48, (g) => {
-      g.fillStyle = '#1f3c6e'; g.fillRect(0, 0, 256, 48); g.fillStyle = '#d7262e'; g.fillRect(0, 40, 256, 8);
-      g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.fillText('黄金町', 14, 30); g.font = 'bold 15px sans-serif'; g.fillText('Koganecho Sta.', 120, 22); g.font = '11px sans-serif'; g.fillText('京急線', 120, 36);
+    // white KEIKYU station signs: one on the corner pier, one hanging under the deck
+    const sT = canvasTex(160, 48, (g) => {
+      g.fillStyle = '#f7f7f4'; g.fillRect(0, 0, 160, 48); g.fillStyle = '#1d4fa0'; g.font = 'bold 8px sans-serif'; g.fillText('KEIKYU', 6, 12);
+      g.fillStyle = '#1b1b1b'; g.font = 'bold 22px sans-serif'; g.fillText('黄金町駅', 46, 26); g.font = '10px sans-serif'; g.fillText('Koganechō Station', 52, 40);
+      g.fillStyle = '#1d4fa0'; g.fillRect(0, 44, 160, 4);
     });
-    mesh(new THREE.PlaneGeometry(9.6, 1.8), lam({ map: sT }), sbc, 4.4, vz + 3.24);
+    const sMat = lam({ map: sT });
+    mesh(new THREE.PlaneGeometry(2.4, 0.72), sMat, ST1 - 1.6, 3.4, vz + 3.02);
+    mesh(new THREE.PlaneGeometry(2.4, 0.72), sMat, ST1 - 0.79, 3.4, vz + 2.2).rotation.y = Math.PI / 2;
+    mesh(new THREE.PlaneGeometry(2.0, 0.6), sMat, sbc - 3, 4.7, vz + 2.6);
+    mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 4), poleMat, sbc - 3.7, 5.55, vz + 2.6); mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 4), poleMat, sbc - 2.3, 5.55, vz + 2.6);
     SEATS.push({ zone: 'alley', at: [YO.x + sbc, YO.z + hz + 3.2], r: 2.0, label: '黄金町駅 개찰구',
       act: () => toast('黄金町駅. 다음은 히노데초, 그다음은 사쿠라기초.') } as Spot);
     // under the tracks on either side of the station building: small galleries (Koganecho Bazaar)
@@ -596,7 +612,16 @@ export function setupYokohama(G: Game) {
       mesh(new THREE.PlaneGeometry(2.8, 0.7), lam({ map: t }), xx, 2.95, gz + 1.63);
     });
     // north of the tracks: the 1丁目 blocks (a lane between them leads from under the station up to 218)
-    fillBlock(81.5, 99.5, vz - 18, vz - 4, 10, 22); fillBlock(103.5, OTA.x - OTA.w / 2 - 0.5, vz - 18, vz - 4, 10, 22);
+    fillBlock(81.5, 99.5, vz - 18, vz - 4, 10, 22); fillBlock(103.5, OTA.x - OTA.w / 2 - 0.5, vz - 18, vz - 10.5, 10, 22);
+    {
+      const fx = 109.2, fz = vz - 7, fw = 10.4, fd = 5.4;
+      box(fx, 0, fz, fw, 3.6, fd, lam({ color: 0xf4f4f0 }), true); col(fx, fz, fw, fd);
+      const fmT = canvasTex(128, 24, (g) => { g.fillStyle = '#fff'; g.fillRect(0, 0, 128, 24); g.fillStyle = '#1a8f3c'; g.fillRect(0, 0, 128, 7); g.fillStyle = '#1e64b4'; g.fillRect(0, 17, 128, 7); g.fillStyle = '#1e64b4'; g.font = 'bold 10px sans-serif'; g.fillText('FamilyMart', 34, 15); });
+      for (const [x, z, ry, w] of [[fx, fz + fd / 2 + 0.02, 0, fw], [fx + fw / 2 + 0.02, fz, Math.PI / 2, fd]] as [number, number, number, number][]) {
+        mesh(new THREE.PlaneGeometry(w - 0.4, 0.8), lam({ map: fmT }), x, 3.1, z).rotation.y = ry;
+        mesh(new THREE.PlaneGeometry(w - 1.2, 2.2), lam({ color: 0x9fb8c4 }), x, 1.2, z).rotation.y = ry;
+      }
+    }
     flat(101.5, vz - 11, 4, 14, lam({ map: rep(paveT, 2, 8) }), 0.004);
     // route 218, east-west north of the blocks, with crossroads at 栄橋 street and 藤棚浦舟通り
     const R218 = -122;
@@ -673,7 +698,23 @@ export function setupYokohama(G: Game) {
     // the Keikyu viaduct carries on along the north bank
     const VU0 = 6.3;
     tbox((VU0 + U1) / 2, 6.5, -22, U1 - VU0, 1.1, 6, viaduct, true);
-    for (let u = VU0 + 4; u < U1; u += 12) { tbox(u - 2.2, 0, -22, 0.9, 6.5, 0.9, viaduct, true); tbox(u + 2.2, 0, -22, 0.9, 6.5, 0.9, viaduct, true); }
+    for (let u = VU0 + 4; u < U1; u += 12) {
+      if (W(u - 2.2, -22)[0] < OTA.x + OTA.w / 2 + 1.5) continue;   // keep 藤棚浦舟通り clear
+      tbox(u - 2.2, 0, -22, 0.9, 6.5, 0.9, viaduct, true); tbox(u + 2.2, 0, -22, 0.9, 6.5, 0.9, viaduct, true);
+    }
+    // green riveted steel girders where the tracks cross the two streets (no piers in the road)
+    const girder = lam({ color: 0x5f7a5a });
+    tbox(10.4, 5.0, -22, 9, 1.5, 6.2, girder);
+    box(75, 5.0, vz, 13, 1.5, 6.2, girder);
+    box(VX1, 5.0, vz, 4.2, 1.5, 6.4, girder).rotation.y = ANG / 2;
+    // the blue lane sign hanging from the girder over 藤棚浦舟通り, for traffic heading north
+    const laneT = canvasTex(96, 32, (g) => {
+      g.fillStyle = '#1f5fbf'; g.fillRect(0, 0, 96, 32); g.strokeStyle = '#fff'; g.lineWidth = 3; g.fillStyle = '#fff';
+      const up = (x: number) => { g.beginPath(); g.moveTo(x, 28); g.lineTo(x, 8); g.stroke(); g.beginPath(); g.moveTo(x - 5, 12); g.lineTo(x, 5); g.lineTo(x + 5, 12); g.fill(); };
+      up(18); g.beginPath(); g.moveTo(18, 18); g.lineTo(8, 18); g.stroke(); up(48); up(78); g.beginPath(); g.moveTo(78, 16); g.lineTo(90, 16); g.stroke();
+      g.setLineDash([3, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(33, 4); g.lineTo(33, 30); g.moveTo(63, 4); g.lineTo(63, 30); g.stroke();
+    });
+    mesh(new THREE.PlaneGeometry(4.2, 1.4), lam({ map: laneT }), OTA.x + 2, 4.1, -96.7);
     { const j = box(VX1, 6.5, vz, 4, 1.1, 6.4, viaduct, true); j.rotation.y = ANG / 2; }
     for (let i = 0; i < 2; i++) tbox(VU0 + 14 + i * 18.6, 7.6, -22, 18.4, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
     // buildings, turned with the street: south bank row (末吉町) and north of the tracks
@@ -699,7 +740,7 @@ export function setupYokohama(G: Game) {
       const nr = mesh(new THREE.PlaneGeometry(5, 1.4), lam({ color: 0x2b2b2b }), 9.5, 0.75, 15.97, false, tg); nr.rotation.y = Math.PI;   // noren
     }
     trow(14.5, SUE.u - SUE.w / 2 - 0.5, 15.8, 29, 8, 20); trow(SUE.u + SUE.w / 2 + 0.5, U1, 15.8, 29, 8, 22);
-    trow(U0, 16, -40, -25.2, 10, 24); trow(46, SUE.u - SUE.w / 2 - 0.5, -40, -25.2, 10, 24); trow(SUE.u + SUE.w / 2 + 0.5, U1, -40, -25.2, 10, 24);
+     trow(SUE.u + SUE.w / 2 + 0.5, U1, -40, -25.2, 10, 24);
     tbox(U1 + 3, 0, 0, 5, 18, 80, faceMats(5, 80, 18, aptTex('#cdbba1', false, 'flat'), aptTex('#cdbba1', true, 'flat')), true);   // end of the map
     for (let u = U0 + 10; u < U1; u += 16) if (Math.abs(u - SUE.u) > 6) streetLamp(...W(u, 15.6), 0, -1);
     // walls of the turned stretch, and the edges of the whole downstream area
