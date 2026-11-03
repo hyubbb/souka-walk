@@ -62,8 +62,9 @@ export function setupLoop(G: Game) {
         char.position.x = THREE.MathUtils.clamp(char.position.x, ob.x0, ob.x1);
         char.position.z = THREE.MathUtils.clamp(char.position.z, ob.z0, ob.z1);
       } else if (S.zone === 'house') {
-        char.position.x = THREE.MathUtils.clamp(char.position.x, HX - 2.2, HX + 14.8);
-        char.position.z = THREE.MathUtils.clamp(char.position.z, 0.2, 14.3);
+        const hb = G.houseBox();
+        char.position.x = THREE.MathUtils.clamp(char.position.x, hb.x0, hb.x1);
+        char.position.z = THREE.MathUtils.clamp(char.position.z, hb.z0, hb.z1);
       }
       if (faceMove) {
         const target = Math.atan2(dx, dz);

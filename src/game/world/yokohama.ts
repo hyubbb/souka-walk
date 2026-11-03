@@ -504,7 +504,7 @@ export function setupYokohama(G: Game) {
       toast('요시노초. 오늘은 공원 지나 오오카강까지 걸어 볼까.');
     }, 280);
   }
-  G.SPOTS.push({ zone: 'alley', at: [YO.x + DOOR.x, YO.z + DOOR.z - 0.6], r: 1.3, label: '집에 들어가기', act: () => G.goZone('house') } as Spot);
+  G.SPOTS.push({ zone: 'alley', at: [YO.x + DOOR.x, YO.z + DOOR.z - 0.6], r: 1.3, label: '집에 들어가기', act: () => G.goZone('house', 'yoko') } as Spot);
   for (const s of SEATS) G.SPOTS.push(s);
   G.yokohama = { root, go, origin: YO };
 }

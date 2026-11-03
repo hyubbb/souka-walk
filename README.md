@@ -104,7 +104,7 @@ src/
     types.ts              State, UiState, EditObj 등 타입
     lighting.ts           시간대별 하늘·조명
     world/alley.ts        골목 (건물, 정원, 간판, 전봇대, 가로등, 자판기, 편의점)
-    world/house.ts        집 구조 (방 6개 + 베란다, 벽·바닥, 손으로 만든 소품과 큰 머그컵·리모컨)
+    world/house.ts        집 구조 (방 6개 + 베란다, 벽·바닥, 손으로 만든 소품과 큰 머그컵·리모컨) + 요코하마 STUDIO Z 1K 원룸 (욕실·세면실·화장실·부엌·洋室·베란다)
     world/yokohama.ts     요코하마 요시노초~반도바시: 국도 21호, 오오카강과 다리, 선형 공원, 반도바시 공원과 고가도로, 집(STUDIO Z)
     world/city.ts         타케시바 지도 (처음 갈 때 로딩, 삼각형 격자로 땅 높이·벽 판정, 개찰구 이동)
     heavyAssets.ts        큰 모델 목록 (단일 파일 빌드는 heavyAssets.empty.ts로 바꿔치기)

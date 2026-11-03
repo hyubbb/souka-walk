@@ -13,6 +13,7 @@ export function setupInteract(G: Game) {
     { zone: 'alley', obj: '벤치', at: [2.3, -30], label: '벤치에 앉기', seat: { y: 0.43, rot: -Math.PI / 2, pose: 'sit', exit: [1.5, -30] } },
     { zone: 'alley', at: [0, 13.1], label: '집에 들어가기', act: () => goZone('house') },
     { zone: 'house', at: L(13.2, 13.7), label: '출근하기', act: () => goZone('alley') },
+    { zone: 'house', at: L(203.15, 0.55), r: 1.1, label: '밖으로 나가기', act: () => G.yokohama?.go() },
     { zone: 'house', obj: '체중계', at: L(10.0, 12.85), r: 0.8, label: '체중계에 올라가기', seat: { y: 0.09, rot: Math.PI, pose: 'stand', msg: '……3.2kg' } },
   ];
   // spots follow their furniture when it is moved in edit mode: store them relative to the object
@@ -76,9 +77,10 @@ export function setupInteract(G: Game) {
     }
     S.seat = null; S.seatY = 0; G.setPose('stand');
   }
-  const inBounds = (x: number, z: number) => S.zone === 'house'
-    ? x >= HX - 2.2 && x <= HX + 14.8 && z >= 0.2 && z <= 14.3
-    : G.inOutBounds(x, z);
+  const inBounds = (x: number, z: number) => {
+    if (S.zone !== 'house') return G.inOutBounds(x, z);
+    const b = G.houseBox(); return x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1;
+  };
 
   // --- carrying props and putting them on whatever surface is in front ---
   const downRay = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0);
@@ -145,10 +147,18 @@ export function setupInteract(G: Game) {
   }
 
   /** Walk out of the front door / back in, with a short fade. */
-  function goZone(z: 'house' | 'alley') {
+  function goZone(z: 'house' | 'alley', home: 'main' | 'yoko' = 'main') {
     G.setUi({ fading: true });
     setTimeout(() => {
       S.zone = z; S.seat = null; S.seatY = 0; G.setPose('stand');
+      if (z === 'house') S.home = home;
+      if (z === 'house' && home === 'yoko') {
+        // the Yokohama apartment: just inside the front door, facing into the flat (south)
+        char.position.set(G.aptDoorIn.x, 0, G.aptDoorIn.z); char.rotation.y = 0; S.camYaw = Math.PI + 0.55; S.camDist = 6.4;
+        for (const g of G.wallGroups) g.visible = true;
+        G.applyTime(S.timeIdx); G.setUi({ fading: false });
+        return;
+      }
       if (z === 'alley') { S.area = 'alley'; char.position.set(0, 0, 8.4); char.rotation.y = Math.PI; S.camYaw = 0; S.camDist = 5.6; if (!S.taskDone) G.setUi({ task: '할 일: 편의점에서 캔커피' }); }
       else { char.position.set(HX + 13.2, 0, 13.4); char.rotation.y = Math.PI; S.camYaw = 0.75; S.camDist = 6.4; }
       for (const g of G.wallGroups) g.visible = true;

@@ -51,7 +51,7 @@ export function setupEdit(G: Game) {
   let charDrag: { dx: number; dz: number } | null = null, charBox: THREE.BoxHelper | null = null;
   function clampChar() {
     const p = char.position;
-    if (S.zone === 'house') { p.x = THREE.MathUtils.clamp(p.x, HX - 2.2, HX + 14.8); p.z = THREE.MathUtils.clamp(p.z, 0.2, 14.3); return; }
+    if (S.zone === 'house') { const b = G.houseBox(); p.x = THREE.MathUtils.clamp(p.x, b.x0, b.x1); p.z = THREE.MathUtils.clamp(p.z, b.z0, b.z1); return; }
     const b = G.outBounds(); if (b) { p.x = THREE.MathUtils.clamp(p.x, b.x0, b.x1); p.z = THREE.MathUtils.clamp(p.z, b.z0, b.z1); }
     if (S.area === 'city') { const gy = G.city.groundAt(p.x, p.z, p.y + 3); if (gy !== null) p.y = gy; }
   }
