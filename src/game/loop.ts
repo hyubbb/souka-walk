@@ -41,7 +41,7 @@ export function setupLoop(G: Game) {
     }
     if (moving && (S.pose !== 'stand' || S.seat)) G.standUp();
     if (moving) {
-      const maxSp = keys['shift'] ? 4.4 : 2.1;
+      const maxSp = keys['shift'] ? (G.RUN_SPEEDS[G.ui.runIdx] ?? 4.4) : 2.1;
       S.speedNow = S.speedNow < maxSp ? Math.min(maxSp, S.speedNow + dt * 8) : Math.max(maxSp, S.speedNow - dt * 6);
       const nx = char.position.x + dx * S.speedNow * dt, nz = char.position.z + dz * S.speedNow * dt;
       const p = char.position;

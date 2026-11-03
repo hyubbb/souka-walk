@@ -121,7 +121,8 @@ export interface UiState {
   showClock: boolean;    // date + place, top left
   showTask: boolean;     // "할 일", top right
   showTalk: boolean;
-  rotIdx: number;        // Q/E camera turn speed (index into ROT_SPEEDS)     // souka's one-liners / arrival notes in the middle of the screen
+  rotIdx: number;
+  runIdx: number;        // Shift run speed (index into RUN_SPEEDS)        // Q/E camera turn speed (index into ROT_SPEEDS)     // souka's one-liners / arrival notes in the middle of the screen
 }
 
 export type Game = {

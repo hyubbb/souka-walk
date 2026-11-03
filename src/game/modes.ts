@@ -48,8 +48,8 @@ export function setupModes(G: Game) {
     /** Window-filling view on/off and the HUD bits; remembered in this browser. */
   function setView(patch: Partial<typeof G.ui>) {
     G.setUi(patch);
-    const { big, showClock, showTask, showTalk, rotIdx } = G.ui;
-    try { localStorage.setItem('souka-view', JSON.stringify({ big, showClock, showTask, showTalk, rotIdx })); } catch { /* private mode */ }
+    const { big, showClock, showTask, showTalk, rotIdx, runIdx } = G.ui;
+    try { localStorage.setItem('souka-view', JSON.stringify({ big, showClock, showTask, showTalk, rotIdx, runIdx })); } catch { /* private mode */ }
     if ('big' in patch) { document.body.classList.toggle('big', G.ui.big); G.fit(); }
   }
   function setReelCam(m: 'front' | 'free') {
@@ -57,5 +57,5 @@ export function setupModes(G: Game) {
     if (m === 'front') S.camDist = Math.min(S.camDist, 8);
     G.notify();
   }
-  Object.assign(G, { ROT_SPEEDS: [0.9, 1.8, 2.8, 4.2], setView, setReelCam, photoPan, minD, maxD, setFrame, setSubStyle, setSubs, toggleGuide, applyRenderSize, togglePhoto, toggleReels });
+  Object.assign(G, { RUN_SPEEDS: [3.2, 4.4, 6.2, 8.5], ROT_SPEEDS: [0.9, 1.8, 2.8, 4.2], setView, setReelCam, photoPan, minD, maxD, setFrame, setSubStyle, setSubs, toggleGuide, applyRenderSize, togglePhoto, toggleReels });
 }

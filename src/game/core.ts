@@ -21,7 +21,7 @@ export function createCore(stage: HTMLElement): Game {
   const ui: UiState = {
     clock: '10/28 (水) 08:12', room: '1. BEDROOM 침실', task: '할 일: 현관에서 출근하기',
     prompt: '', toast: '', fading: false, rec: '', album: [], shotUrl: null, video: null, resetConfirm: false,
-    big: true, menuOpen: false, showClock: true, showTask: true, showTalk: true, rotIdx: 1,
+    big: true, menuOpen: false, showClock: true, showTask: true, showTalk: true, rotIdx: 1, runIdx: 1,
   };
   try { Object.assign(ui, JSON.parse(localStorage.getItem('souka-view') || '{}'), { menuOpen: false }); } catch { /* private mode */ }
 
