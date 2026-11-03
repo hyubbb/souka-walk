@@ -160,8 +160,14 @@ export function setupLoop(G: Game) {
     const dt = Math.min(clock.getDelta(), 0.05);
     if (S.editMode) G.edit.update(dt);
     else if (!S.photo) {
-      if (keys['q']) S.camYaw += dt * 1.8;
-      if (keys['e']) S.camYaw -= dt * 1.8;
+      const rs = G.ROT_SPEEDS[G.ui.rotIdx] ?? 1.8;
+      if (keys['q']) S.camYaw += dt * rs;
+      if (keys['e']) S.camYaw -= dt * rs;
+      // jump (Space): a hop that only moves the drawn body, so walls, kerbs and seats are not affected
+      if (S.jumpV || S.jumpY) {
+        S.jumpV -= 15 * dt; S.jumpY += S.jumpV * dt;
+        if (S.jumpY <= 0) { S.jumpY = 0; S.jumpV = 0; }
+      }
       G.refreshDynCols();
       if (S.riding) G.updateRide(dt); else walk(dt);
       // auto blink
@@ -171,6 +177,8 @@ export function setupLoop(G: Game) {
     }
 
     G.applyPose(dt);
+    if (S.jumpY) G.body.position.y += S.jumpY / (S.size || 1);
+    const bs = 1 - Math.min(0.5, (S.jumpY || 0) * 0.6); G.blob.scale.set(bs, bs, bs);
     G.sun.position.set(char.position.x - 6, char.position.y + 14, char.position.z + 8); G.sun.target.position.set(char.position.x, char.position.y, char.position.z);
     G.blob.position.set(char.position.x, char.position.y + 0.012, char.position.z);
     G.blob.visible = !(S.riding && S.riding.type === 'car');

@@ -54,6 +54,12 @@ export function Panel() {
           <button aria-pressed={ui.showTask} onClick={() => G.setView({ showTask: !ui.showTask })}>할 일</button>
           <button aria-pressed={ui.showTalk} onClick={() => G.setView({ showTalk: !ui.showTalk })}>혼잣말·안내</button>
         </div>
+        <h3 className="sub">Q·E 회전 속도</h3>
+        <div className="row" role="group" aria-label="Q·E 화면 회전 속도">
+          {['느리게', '보통', '빠르게', '아주 빠르게'].map((l, i) => (
+            <button key={l} aria-pressed={ui.rotIdx === i} onClick={() => G.setView({ rotIdx: i })}>{l}</button>
+          ))}
+        </div>
       </section>
 
       {walking && (
@@ -63,7 +69,7 @@ export function Panel() {
           <summary>조작법</summary>
           <dl className="keys">
             <dt><K>WASD</K> <K>←↑↓→</K></dt><dd>걷기 · 운전</dd>
-            <dt><K>Shift</K></dt><dd>달리기</dd>
+            <dt><K>Shift</K> · <K>Space</K></dt><dd>달리기 · 점프</dd>
             <dt><K>Q</K> <K>E</K> · 드래그</dt><dd>카메라 회전 · 높이</dd>
             <dt>휠</dt><dd>카메라 거리</dd>
             <dt><K>C</K></dt><dd>앉기 · 눕기 · 문 · 들기 · 차/자전거 타기</dd>

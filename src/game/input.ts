@@ -21,6 +21,7 @@ export function setupInput(G: Game) {
     if (k === 'v' && S.reels) G.toggleRec();
     if (k === 'f' && S.reels) G.setReelCam(S.reelCam === 'front' ? 'free' : 'front');
     if (k === 'b' && !S.photo && !S.reels) { G.edit.toggle(); return; }
+    if (k === ' ' && !S.photo && !S.riding && !S.seat && S.pose === 'stand' && !S.jumpY && !e.repeat) S.jumpV = 4.6 * Math.sqrt(S.size || 1);
     if (!S.photo && S.held && k === 'z') S.reach = Math.max(0.45, S.reach - 0.15);
     if (!S.photo && S.held && k === 'x') S.reach = Math.min(1.6, S.reach + 0.15);
     if (!S.photo && k === 'c') G.interact();
