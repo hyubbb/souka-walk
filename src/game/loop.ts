@@ -93,7 +93,7 @@ export function setupLoop(G: Game) {
     const [hh, mm] = S.clockBase.split(':').map(Number);
     const mins = hh * 60 + mm + Math.floor(performance.now() / 4000);
     const clockTxt = `10/28 (水) ${String(Math.floor(mins / 60) % 24).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-    let room = S.area === 'city' ? '타케시바 TAKESHIBA' : S.area === 'yokohama' ? (char.position.x - G.yokohama.origin.x > 196 ? '黄金町 KOGANECHO' : char.position.x - G.yokohama.origin.x > 96 ? '大岡川 OOKA RIVER' : '요코하마 YOKOHAMA') : '골목 ALLEY';
+    let room = S.area === 'city' ? '타케시바 TAKESHIBA' : S.area === 'yokohama' ? (char.position.x - G.yokohama.origin.x > 129 ? '末吉町 · 大岡川 SUEYOSHICHO' : char.position.x - G.yokohama.origin.x > 81 ? '黄金町 KOGANECHO' : '요코하마 YOKOHAMA') : '골목 ALLEY';
     if (S.zone === 'house') {
       const lx = char.position.x - HX, lz = char.position.z;
       const r = G.ROOMS.find((o: any) => lx >= o.r[0] && lx <= o.r[1] && lz >= o.r[2] && lz <= o.r[3]);

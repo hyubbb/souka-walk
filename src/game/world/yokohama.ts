@@ -14,7 +14,7 @@ import type { Game, Spot } from '../types';
 /** World offset of this place (far to the west, out of sight of the alley and the house). */
 export const YO = { x: -600, z: 0 };
 // x1 reaches down the river to Koganecho; the south-east beyond the river block is walled off (see KOGANE)
-const BOUNDS = { x0: -92, x1: 332, z0: -101, z1: 56 };
+const BOUNDS = { x0: -92, x1: 200, z0: -150, z1: 56 };
 /** Souka's front door (local x / z): home is south of Route 21, the door faces north. */
 const HOME = { x: -14, z: 15.75 };
 const DOOR = { x: -15, z: 10.6 };   // straight across the road from the MaxValu sign
@@ -420,12 +420,26 @@ export function setupYokohama(G: Game) {
       bench(CX0 + 4, -55, 0, '富士見川公園 벤치에 앉기');
       for (const [x, z, s] of [[CX0 + 1.4, -58, 1.3], [CX0 + 1.4, -47, 1.1], [FX1 - 1.3, -56, 1.3], [FX1 - 1.3, -46, 1.2], [CX0 + 7, -59, 1], [FX1 - 6, -59, 1.1]] as [number, number, number][]) tree(x, z, s);
     }
-    fillBlock(FX1 + 1, 68, -66, -41.5, 6, 14);
-    // HOTEL MYSTAYS by the river, east of the park chain
-    building(78, -58, 14, 14, 33.6, { base: '#e7e4dc', kind: 'office' });
+    // HOTEL MYSTAYS on the river just west of 栄橋, and かに愛知屋 (with its crab) on the street behind it
+    building(61.5, -59.6, 13, 11, 33.6, { base: '#e7e4dc', kind: 'office' });
+    {
+      const ax = 61.5, az = -46.5;
+      box(ax, 0, az, 12, 7.2, 8, lam({ color: 0xe9e1cf }), true); col(ax, az, 12, 8);
+      box(ax, 2.6, az + 4.1, 12.4, 0.5, 1.2, red);                          // awning over the entrance
+      mesh(new THREE.PlaneGeometry(5, 2.2), glassDark, ax - 2, 1.2, az + 4.02);
+      const kT = canvasTex(128, 32, (g) => { g.fillStyle = '#b8221c'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#fff'; g.font = 'bold 20px serif'; g.fillText('かに 愛知屋', 8, 24); });
+      mesh(new THREE.PlaneGeometry(6.4, 1.6), lam({ map: kT }), ax + 2.2, 4.4, az + 4.02);
+      // the crab: a red shell, claws and legs on the front wall
+      const crab = lam({ color: 0xd2382b });
+      const sh = mesh(new THREE.SphereGeometry(1, 12, 8), crab, ax - 2.6, 5.5, az + 4.3); sh.scale.set(1.5, 0.75, 0.5);
+      for (const sx of [-1, 1]) {
+        const cl = mesh(new THREE.SphereGeometry(0.45, 8, 6), crab, ax - 2.6 + sx * 2.1, 6.4, az + 4.4); cl.scale.set(1, 0.7, 0.5);
+        for (let k = 0; k < 3; k++) { const lg = mesh(new THREE.BoxGeometry(1.2, 0.12, 0.12), crab, ax - 2.6 + sx * (1.9 + k * 0.1), 5.1 - k * 0.32, az + 4.3); lg.rotation.z = sx * (-0.5 - k * 0.15); }
+        mesh(new THREE.SphereGeometry(0.1, 6, 4), black, ax - 2.6 + sx * 0.35, 6.1, az + 4.75);
+      }
+    }
     const hT = canvasTex(32, 256, (g) => { g.fillStyle = '#f5f2ea'; g.fillRect(0, 0, 32, 256); g.fillStyle = '#c8326e'; g.font = 'bold 18px sans-serif'; g.textAlign = 'center'; 'MYSTAYS'.split('').forEach((c, i) => g.fillText(c, 16, 30 + i * 32)); });
-    const hs = mesh(new THREE.PlaneGeometry(1.2, 9.6), new THREE.MeshBasicMaterial({ map: hT }), 70.9, 24, -54); hs.rotation.y = -Math.PI / 2;
-    fillBlock(84.5, 92, -66, -41.5);
+    const hs = mesh(new THREE.PlaneGeometry(1.2, 9.6), new THREE.MeshBasicMaterial({ map: hT }), 68.05, 24, -56); hs.rotation.y = Math.PI / 2;
 
     // the open plaza between the playground and the river, with the footbridge at its end
     flat((CX0 + FX1) / 2, (RZ1 + 4.4 + FZ0) / 2, FX1 - CX0, FZ0 - RZ1 - 4.4, lam({ map: rep(paveT, 12, 4) }), 0.008);
@@ -488,121 +502,183 @@ export function setupYokohama(G: Game) {
   }
 
 
-  // ---------- downstream to Koganecho (黄金町) ----------
-  // The river keeps going east (downstream). North bank: the 白金町 / 黄金町 side with the Keikyu viaduct and
-  // Koganecho station, art studios tucked under the tracks; south bank: the 末吉町 side with the cherry-tree
-  // promenade and a river-side street. Bridges in their real order: 栄橋, 太田橋 (wide, Edo-style lanterns),
-  // 末吉橋, 黄金橋. Further on (日ノ出町 → 桜木町) comes later.
+  // ---------- 栄橋 → 黄金町 → 太田橋, then the river turns north-east (from the user's Google Maps captures) ----------
+  // Straight part (x 81..129): 栄橋 street (x 75) and 藤棚浦舟通り over 太田橋 (x 122) frame the block; Koganecho
+  // station sits on the Keikyu viaduct between them, north of the river. Past 太田橋 the river, its banks and the
+  // viaduct turn about 32° to the north-east; that stretch is built in its own turned frame (u along the river,
+  // v across it, +v = south bank) and walled by a shape test instead of boxes.
   {
-    const X0 = 100, X1 = 336, L = X1 - X0, cx = (X0 + X1) / 2;
-    const vz = RZ0 - 16, rz = (RZ0 + RZ1) / 2, SZ = RZ1 + 7;
-    const KB = [
-      { x: 125, w: 7, name: '栄橋' }, { x: 170, w: 14, name: '太田橋', lantern: true },
-      { x: 225, w: 7, name: '末吉橋' }, { x: 280, w: 8, name: '黄金橋' },
-    ];
-    // ground (the river channel stays open)
-    flat(cx, (RZ1 - 20) / 2, L, -20 - RZ1, lam({ map: rep(groundT, L / 3, 5) }), -0.02);
-    flat(cx, (RZ0 - 130) / 2, L, RZ0 + 130, lam({ map: rep(groundT, L / 3, 15) }), -0.02);
-    // river, banks, promenades
+    const vz = RZ0 - 16, rz = (RZ0 + RZ1) / 2;
+    const OTA = { x: 122, w: 14 };
+    const XS = 100, XE = OTA.x + OTA.w / 2;   // straight water continues to the far side of 太田橋
+    // --- 栄橋 name plate (the existing road bridge at x 75)
+    const plate = (name: string, x: number, z: number, ry: number, parent: THREE.Object3D = root) => {
+      const nT = canvasTex(64, 16, (g) => { g.fillStyle = '#e9e3d2'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#2f2f2f'; g.font = 'bold 11px serif'; g.textAlign = 'center'; g.fillText(name, 32, 12); });
+      const m = mesh(new THREE.PlaneGeometry(1.4, 0.36), lam({ map: nT }), x, 0.75, z, false, parent); m.rotation.y = ry; return m;
+    };
+    plate('栄橋', 81.01, RZ1 + 0.45, Math.PI / 2);
+    // --- straight river x 100..129
     const waterT = canvasTex(64, 64, (g, w, h) => { speckle(g, w, h, '#3f6f74', 0.12, 0.4); g.strokeStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 18; i++) { const y = rnd() * h, x = rnd() * w; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 6 + rnd() * 10, y); g.stroke(); } });
-    flat(cx, rz, L, RZ1 - RZ0, lam({ map: rep(waterT, L / 6.6, 2) }), -1.7);
+    const waterM = lam({ map: rep(waterT, 6, 2) });
     const wallT = canvasTex(32, 16, (g, w, h) => { speckle(g, w, h, '#9b968b', 0.18, 0.6); g.fillStyle = 'rgba(0,0,0,.2)'; for (let y = 0; y < 16; y += 4) g.fillRect(0, y, 32, 1); });
-    for (const z of [RZ0, RZ1]) { const m = mesh(new THREE.PlaneGeometry(L, 1.8), lam({ map: rep(wallT, L / 5, 1) }), cx, -0.85, z); m.rotation.y = z === RZ1 ? Math.PI : 0; }
-    pave(cx, RZ1 + 2.2, L, 4.4); pave(cx, RZ0 - 2.6, L, 5.2);
+    const bankM = lam({ map: rep(wallT, 8, 1) });
     const rail = lam({ color: 0x6d7a72 });
-    let x0 = X0;
-    for (const [g0, g1] of [...KB.map((b) => [b.x - b.w / 2, b.x + b.w / 2]), [X1, X1]]) {
-      if (g0 > x0) {
-        col((x0 + g0) / 2, rz, g0 - x0, RZ1 - RZ0);
-        for (const z of [RZ1 - 0.15, RZ0 + 0.15]) {
-          box((x0 + g0) / 2, 1.0, z, g0 - x0, 0.08, 0.08, rail);
-          for (let px = x0 + 1; px < g0; px += 2) box(px, 0, z, 0.08, 1.05, 0.08, rail);
-        }
-      }
-      x0 = g1;
-    }
-    // the cherry trees of the Ōoka River promenade (both banks)
-    for (let x = X0 + 3; x <= X1 - 3; x += 7) {
-      if (KB.some((b) => Math.abs(x - b.x) < b.w / 2 + 2)) continue;
-      tree(x, RZ1 + 1.6, 1.0); tree(x + 3.5, RZ0 - 1.8, 0.95);
-    }
-    // bridges
+    flat((XS + XE) / 2, rz, XE - XS, RZ1 - RZ0, waterM, -1.7);
+    for (const z of [RZ0, RZ1]) { const m = mesh(new THREE.PlaneGeometry(XE - XS, 1.8), bankM, (XS + XE) / 2, -0.85, z); m.rotation.y = z === RZ1 ? Math.PI : 0; }
+    const R0 = OTA.x - OTA.w / 2;   // railings / channel walls up to 太田橋
+    col((XS + R0) / 2, rz, R0 - XS, RZ1 - RZ0);
+    for (const z of [RZ1 - 0.15, RZ0 + 0.15]) { box((XS + R0) / 2, 1.0, z, R0 - XS, 0.08, 0.08, rail); for (let px = XS + 1; px < R0; px += 2) box(px, 0, z, 0.08, 1.05, 0.08, rail); }
+    pave((92 + R0) / 2, RZ1 + 2.2, R0 - 92, 4.4); pave((92 + R0) / 2, RZ0 - 2.6, R0 - 92, 5.2);
+    road((92 + R0) / 2, RZ0 - 7.6, R0 - 92, 5);
+    for (let x = 86; x < R0 - 2; x += 7) { tree(x, RZ1 + 1.6, 1.0); tree(x + 3.5, RZ0 - 1.8, 0.95); }
+    flat((92 + 135) / 2, (RZ1 - 20) / 2, 135 - 92, -20 - RZ1, lam({ map: rep(groundT, 14, 15) }), -0.02);
+    flat((92 + 135) / 2, (RZ0 - 160) / 2, 135 - 92, RZ0 + 160, lam({ map: rep(groundT, 14, 25) }), -0.02);
+    // --- 太田橋 on 藤棚浦舟通り: a wide road bridge with four Edo-style lanterns
     const span = RZ1 - RZ0 + 0.6;
-    for (const b of KB) {
-      box(b.x, -0.35, rz, b.w, 0.35, span, lam({ map: rep(asphaltT, b.w / 2, 6) }));
-      const side = lam({ color: b.lantern ? 0x9c968a : 0xb8b2a6 });
-      for (const sx of [-1, 1]) {
-        const xx = b.x + sx * (b.w / 2 - 0.12);
-        box(xx, 0, rz, 0.24, 0.95, span, side); col(xx, rz, 0.24, span);
+    box(OTA.x, -0.35, rz, OTA.w, 0.35, span, lam({ map: rep(asphaltT, OTA.w / 2, 6) }));
+    for (const sx of [-1, 1]) {
+      const xx = OTA.x + sx * (OTA.w / 2 - 0.12);
+      box(xx, 0, rz, 0.24, 0.95, span, lam({ color: 0x9c968a })); col(xx, rz, 0.24, span);
+      for (const z of [RZ1 + 0.3, RZ0 - 0.3]) {
+        mesh(new THREE.CylinderGeometry(0.1, 0.14, 3.2, 6), black, xx, 1.6, z);
+        lampHeads.push(mesh(new THREE.BoxGeometry(0.42, 0.55, 0.42), lampOff, xx, 3.45, z));
+        mesh(new THREE.ConeGeometry(0.4, 0.3, 4), black, xx, 3.88, z).rotation.y = Math.PI / 4;
+        col(xx, z, 0.3, 0.3);
       }
-      if (b.lantern) {
-        // 太田橋: four iron posts with Edo-style lanterns (lit in the evening)
-        for (const sx of [-1, 1]) for (const z of [RZ1 + 0.3, RZ0 - 0.3]) {
-          const px = b.x + sx * (b.w / 2 - 0.12);
-          mesh(new THREE.CylinderGeometry(0.1, 0.14, 3.2, 6), black, px, 1.6, z);
-          lampHeads.push(mesh(new THREE.BoxGeometry(0.42, 0.55, 0.42), lampOff, px, 3.45, z));
-          mesh(new THREE.ConeGeometry(0.4, 0.3, 4), black, px, 3.88, z).rotation.y = Math.PI / 4;
-          col(px, z, 0.3, 0.3);
-        }
-      }
-      // name plate on the south-east post, read from the promenade
-      const nT = canvasTex(64, 16, (g) => { g.fillStyle = '#e9e3d2'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#2f2f2f'; g.font = 'bold 11px serif'; g.textAlign = 'center'; g.fillText(b.name, 32, 12); });
-      mesh(new THREE.PlaneGeometry(1.4, 0.36), lam({ map: nT }), b.x + b.w / 2 + 0.01, 0.75, RZ1 + 0.45).rotation.y = Math.PI / 2;
-      // the street carries on across both banks
-      road(b.x, (SZ + 2.5 + -28) / 2, b.w, -28 - SZ - 2.5);
-      road(b.x, (RZ0 - 5.2 + RZ0 - 10.1) / 2, b.w, 4.9);
     }
-    // streets on both banks
-    road(cx, SZ, L, 5); road(cx, RZ0 - 7.6, L, 5);
-    for (let x = X0 + 8; x < X1; x += 16) if (!KB.some((b) => Math.abs(x - b.x) < b.w / 2 + 1.5)) streetLamp(x, SZ + 3, 0, -1);
-    // south bank: 末吉町 blocks between the bridge streets, walled off behind (the map ends there)
-    const cuts = [97, ...KB.flatMap((b) => [b.x - b.w / 2 - 0.5, b.x + b.w / 2 + 0.5]), X1];
-    for (let i = 0; i < cuts.length; i += 2) fillBlock(cuts[i], cuts[i + 1], SZ + 3.2, -28.5, 8, 22);
-    col(214, -27.4, 244, 1); col(95.2, -44, 1, 34);
-    // north bank: the Keikyu viaduct carries on, with Koganecho station on it
+    plate('太田橋', OTA.x - OTA.w / 2 - 0.01, RZ1 + 0.45, -Math.PI / 2);
+    road(OTA.x, (-28 + RZ1) / 2, OTA.w, -28 - RZ1);          // 藤棚浦舟通り, south
+    road(OTA.x, (RZ0 - 150) / 2, OTA.w, RZ0 + 150);           // and north, under the tracks
+    for (const sx of [-1, 1]) line(OTA.x + sx * (OTA.w / 2 - 0.3), -48, 0.15, 40);
+    line(OTA.x, -48, 0.12, 40, yellow);
+    crosswalk(OTA.x, RZ1 + 3.4, 'z', OTA.w - 0.6); crosswalk(OTA.x, RZ0 - 6.6, 'z', OTA.w - 0.6);
+    // --- south bank, 栄橋 street → 藤棚浦舟通り: the Isesakicho-side blocks
+    road((92 + R0) / 2, IZ, R0 - 92, 6);
+    fillBlock(81.5, R0 - 0.5, RZ1 + 4.6, IZ - 3.4, 8, 20);
+    fillBlock(81.5, R0 - 0.5, IZ + 3.4, -28.5, 8, 18);
+    // --- Keikyu viaduct + 黄金町 station (between 栄橋 and 藤棚浦舟通り, north of the river)
     const viaduct = lam({ color: 0xb4afa4 });
-    box(cx, 6.5, vz, L, 1.1, 6, viaduct, true);
-    for (let x = X0 + 2; x <= X1; x += 12) { box(x - 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); box(x + 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); }
-    const ST0 = 200, ST1 = 262, stc = (ST0 + ST1) / 2;
-    box(stc, 6.5, vz, ST1 - ST0, 1.1, 12, viaduct, true);                      // wider deck for the platforms
+    const VX1 = 119.7;   // where the straight viaduct meets the turned one
+    box((92 + VX1) / 2, 6.5, vz, VX1 - 92, 1.1, 6, viaduct, true);
+    for (let x = 96; x <= VX1; x += 12) { box(x - 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); box(x + 2.2, 0, vz, 0.9, 6.5, 0.9, viaduct, true); }
+    const ST0 = 82, ST1 = 116, stc = (ST0 + ST1) / 2;
+    box(stc, 6.5, vz, ST1 - ST0, 1.1, 12, viaduct, true);
     for (const sz of [-1, 1]) {
-      box(stc, 7.6, vz + sz * 4.6, ST1 - ST0 - 2, 0.9, 2.6, lam({ color: 0xa9a49a }), true);       // platform
-      box(stc, 10.6, vz + sz * 4.4, ST1 - ST0 - 6, 0.18, 3.4, lam({ color: 0x5b5f63 }), true);     // canopy
-      for (let x = ST0 + 5; x < ST1 - 3; x += 8) mesh(new THREE.BoxGeometry(0.15, 2.1, 0.15), steel, x, 9.55, vz + sz * 5.4);
-      box(stc, 7.6, vz + sz * 5.9, ST1 - ST0 - 2, 1.2, 0.08, lam({ color: 0xd9d6cc }), true);       // platform fence
+      box(stc, 7.6, vz + sz * 4.6, ST1 - ST0 - 2, 0.9, 2.6, lam({ color: 0xa9a49a }), true);
+      box(stc, 10.6, vz + sz * 4.4, ST1 - ST0 - 4, 0.18, 3.4, lam({ color: 0x5b5f63 }), true);
+      for (let x = ST0 + 3; x < ST1 - 2; x += 6) mesh(new THREE.BoxGeometry(0.15, 2.1, 0.15), steel, x, 9.55, vz + sz * 5.4);
+      box(stc, 7.6, vz + sz * 5.9, ST1 - ST0 - 2, 1.2, 0.08, lam({ color: 0xd9d6cc }), true);
     }
-    // a red Keikyu train standing at the platform
+    box(stc, 6.0, vz + 6.06, ST1 - ST0, 0.5, 0.1, red);
     const trainT = canvasTex(64, 16, (g) => { g.fillStyle = '#c4272d'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#efe9df'; g.fillRect(0, 9, 64, 2); g.fillStyle = '#2d3640'; for (let x = 3; x < 64; x += 8) g.fillRect(x, 2, 6, 5); });
     const tr = lam({ color: 0xc4272d }), trTop = lam({ color: 0xb7b2a8 }), trSide = lam({ map: trainT });
-    for (let i = 0; i < 3; i++) box(ST0 + 6 + 9.25 + i * 18.6, 7.6, vz, 18.4, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
-    // station building under the tracks, entrance facing the river
-    const SB0 = 222, SB1 = 250, sbc = (SB0 + SB1) / 2;
+    for (let i = 0; i < 2; i++) box(ST0 + 1.5 + 9.2 + i * 18.6, 7.6, vz - 1.6, 18.4, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
+    const SB0 = 90, SB1 = 110, sbc = (SB0 + SB1) / 2;
     box(sbc, 0, vz, SB1 - SB0, 5.6, 6.4, lam({ color: 0xe4e0d6 }), true); col(sbc, vz, SB1 - SB0, 6.4);
-    mesh(new THREE.PlaneGeometry(9, 2.6), glassDark, sbc, 1.3, vz + 3.22);
+    mesh(new THREE.PlaneGeometry(8, 2.6), glassDark, sbc, 1.3, vz + 3.22);
     const gateT = canvasTex(64, 16, (g) => { g.fillStyle = '#20252b'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#7fd0ff'; for (let x = 4; x < 64; x += 12) g.fillRect(x, 6, 6, 3); });
-    mesh(new THREE.PlaneGeometry(8.6, 1.0), lam({ map: gateT }), sbc, 0.5, vz + 3.25);
+    mesh(new THREE.PlaneGeometry(7.6, 1.0), lam({ map: gateT }), sbc, 0.5, vz + 3.25);
     const sT = canvasTex(256, 48, (g) => {
       g.fillStyle = '#1f3c6e'; g.fillRect(0, 0, 256, 48); g.fillStyle = '#d7262e'; g.fillRect(0, 40, 256, 8);
       g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.fillText('黄金町', 14, 30); g.font = 'bold 15px sans-serif'; g.fillText('Koganecho Sta.', 120, 22); g.font = '11px sans-serif'; g.fillText('京急線', 120, 36);
     });
     mesh(new THREE.PlaneGeometry(9.6, 1.8), lam({ map: sT }), sbc, 4.4, vz + 3.24);
-    box(stc, 6.0, vz + 6.06, ST1 - ST0, 0.5, 0.1, red);   // red stripe along the station side
     SEATS.push({ zone: 'alley', at: [YO.x + sbc, YO.z + vz + 4.4], r: 2.2, label: '黄金町駅 개찰구',
       act: () => toast('黄金町駅. 다음은 히노데초, 그다음은 사쿠라기초.') } as Spot);
-    // under the tracks east of the station: small galleries and studios (Koganecho Bazaar style)
-    const SHOPS = ['GALLERY', 'STUDIO 1', 'café 黄金', 'ART SPACE', 'STUDIO 2', 'BOOKS', 'STUDIO 3', 'BAR'];
-    const SHOP_COLS = ['#efe6d2', '#3b4b5c', '#d9c3a0', '#f2f0ea', '#5a6a58', '#c9b8a6', '#2f2f33', '#7d3b3b'];
-    SHOPS.forEach((nm, i) => {
-      const x = 268 + i * 8.2; if (x > X1 - 4) return;
-      box(x, 0, vz, 7.4, 3.4, 5.2, lam({ color: new THREE.Color(SHOP_COLS[i]).getHex() }), true); col(x, vz, 7.4, 5.2);
-      mesh(new THREE.PlaneGeometry(4.2, 2.3), glassDark, x - 0.8, 1.25, vz + 2.62);
-      const t = canvasTex(64, 16, (g) => { g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#222'; g.font = 'bold 10px sans-serif'; g.textAlign = 'center'; g.fillText(nm, 32, 11); });
-      mesh(new THREE.PlaneGeometry(3.2, 0.7), lam({ map: t }), x, 2.95, vz + 2.63);
+    // under the tracks on either side of the station building: small galleries (Koganecho Bazaar)
+    [['GALLERY', '#efe6d2', 84], ['café 黄金', '#d9c3a0', 114.5]].forEach(([nm, c, x]) => {
+      const xx = x as number;
+      box(xx, 0, vz, 5.4, 3.4, 5, lam({ color: new THREE.Color(c as string).getHex() }), true); col(xx, vz, 5.4, 5);
+      mesh(new THREE.PlaneGeometry(3.2, 2.2), glassDark, xx - 0.6, 1.2, vz + 2.52);
+      const t = canvasTex(64, 16, (g) => { g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#222'; g.font = 'bold 10px sans-serif'; g.textAlign = 'center'; g.fillText(nm as string, 32, 11); });
+      mesh(new THREE.PlaneGeometry(2.8, 0.7), lam({ map: t }), xx, 2.95, vz + 2.53);
     });
-    // and the buildings behind the viaduct
-    fillBlock(68, X1, vz - 18, vz - 4, 10, 26);
-  }
+    // north of the tracks (the 1丁目 blocks below route 218)
+    fillBlock(81.5, OTA.x - OTA.w / 2 - 0.5, vz - 18, vz - 4, 10, 24);
 
+    // ===== past 太田橋: everything turned to run north-east =====
+    const ANG = 32 * Math.PI / 180, ca = Math.cos(ANG), sa = Math.sin(ANG);
+    const P = { x: 126, z: rz };
+    const tg = new THREE.Group(); tg.position.set(P.x, 0, P.z); tg.rotation.y = ANG; root.add(tg);
+    /** turned-frame (u, v) → map-local (x, z) */
+    const W = (u: number, v: number): [number, number] => [P.x + u * ca + v * sa, P.z - u * sa + v * ca];
+    const tbox = (u: number, y: number, v: number, w: number, h: number, d: number, mat: THREE.Material | THREE.Material[], occ = false) => box(u, y, v, w, h, d, mat, occ, tg);
+    const tflat = (u: number, v: number, w: number, d: number, mat: THREE.Material, y = 0) => { const m = mesh(new THREE.PlaneGeometry(w, d), mat, u, y, v, false, tg); m.rotation.x = -Math.PI / 2; return m; };
+    const U0 = 3.6, U1 = 82, UL = U1 - U0, uc = (U0 + U1) / 2;
+    const SUE = { u: 46, w: 7 };   // 末吉橋
+    // ground, water, banks
+    // ground on both sides, reaching well past the walkable part so no sky shows between the turned and the
+    // straight pieces (the north side stops short of the straight river)
+    tflat(65, 65, 190, 120, lam({ map: rep(groundT, 60, 40) }), -0.03);
+    tflat(79.5, -65, 161, 120, lam({ map: rep(groundT, 50, 40) }), -0.03);
+    tflat((U0 - 6 + U1) / 2, 0, UL + 6, RZ1 - RZ0, lam({ map: rep(waterT, UL / 6, 2) }), -1.7);
+    for (const v of [-6, 6]) { const m = mesh(new THREE.PlaneGeometry(UL, 1.8), lam({ map: rep(wallT, UL / 5, 1) }), uc, -0.85, v, false, tg); m.rotation.y = v > 0 ? Math.PI : 0; }
+    const tpave = (u: number, v: number, w: number, d: number) => tflat(u, v, w, d, lam({ map: rep(paveT, w / 1.6, d / 1.6) }), 0.004);
+    const troad = (u: number, v: number, w: number, d: number) => tflat(u, v, w, d, lam({ map: rep(asphaltT, w / 2, d / 2) }), 0.001);
+    tpave(uc, 8.2, UL, 4.4); tpave(uc, -8.6, UL, 5.2);
+    troad(uc, 12.9, UL, 5); troad(uc, -13.6, UL, 5);
+    for (const v of [5.85, -5.85]) for (const [a, b] of [[U0, SUE.u - SUE.w / 2], [SUE.u + SUE.w / 2, U1]]) {
+      tbox((a + b) / 2, 1.0, v, b - a, 0.08, 0.08, rail);
+      for (let u = a + 1; u < b; u += 2) tbox(u, 0, v, 0.08, 1.05, 0.08, rail);
+    }
+    // 末吉橋 and the street over it
+    tbox(SUE.u, -0.35, 0, SUE.w, 0.35, 12.6, lam({ map: rep(asphaltT, 3, 6) }));
+    for (const s of [-1, 1]) tbox(SUE.u + s * (SUE.w / 2 - 0.12), 0, 0, 0.24, 0.95, 12.6, lam({ color: 0xb8b2a6 }));
+    plate('末吉橋', SUE.u + SUE.w / 2 + 0.01, 6.45, Math.PI / 2, tg);
+    troad(SUE.u, 22, SUE.w, 14); troad(SUE.u, -26, SUE.w, 20);
+    // promenade cherry trees and street lamps (trees are round, so plain map colliders are fine)
+    for (let u = U0 + 4; u < U1 - 2; u += 7) {
+      if (Math.abs(u - SUE.u) < SUE.w / 2 + 2) continue;
+      tree(...W(u, 7.6), 1.0); tree(...W(u + 3.5, -7.8), 0.95);
+    }
+    // the Keikyu viaduct carries on along the north bank
+    const VU0 = 6.3;
+    tbox((VU0 + U1) / 2, 6.5, -22, U1 - VU0, 1.1, 6, viaduct, true);
+    for (let u = VU0 + 4; u < U1; u += 12) { tbox(u - 2.2, 0, -22, 0.9, 6.5, 0.9, viaduct, true); tbox(u + 2.2, 0, -22, 0.9, 6.5, 0.9, viaduct, true); }
+    { const j = box(VX1, 6.5, vz, 4, 1.1, 6.4, viaduct, true); j.rotation.y = ANG / 2; }
+    for (let i = 0; i < 2; i++) tbox(VU0 + 14 + i * 18.6, 7.6, -22, 18.4, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
+    // buildings, turned with the street: south bank row (末吉町) and north of the tracks
+    function tbuilding(u: number, v: number, w: number, d: number, h: number) {
+      const base = pick(WALLS), kind = pick(['flat', 'flat', 'balcony', 'office'] as const);
+      tbox(u, 0, v, w, h, d, faceMats(w, d, h, aptTex(base, false, kind), aptTex(base, true, kind)), true);
+      tbox(u, h, v, w + 0.2, 0.25, d + 0.2, roofMat, true);
+    }
+    function trow(u0: number, u1: number, v0: number, v1: number, hMin: number, hMax: number) {
+      let u = u0 + 0.5;
+      while (u < u1 - 3) {
+        const w = Math.min(u1 - 0.5 - u, 5 + rnd() * 8), d = (v1 - v0) - 1 - rnd() * 2;
+        tbuilding(u + w / 2, v0 > 0 ? v0 + 0.3 + d / 2 : v1 - 0.3 - d / 2, w - 0.6, d, hMin + Math.round(rnd() * (hMax - hMin) / 2.8) * 2.8);
+        u += w;
+      }
+    }
+    // 横浜家系ラーメン 黄金家, on the corner just past 太田橋
+    {
+      tbox(9.5, 0, 19.5, 9, 3.8, 7, lam({ color: 0xf1ede2 }), true);
+      tbox(9.5, 3.8, 19.5, 9.2, 4.2, 7.2, faceMats(9.2, 7.2, 4.2, aptTex('#cfc4b2', false, 'flat'), aptTex('#cfc4b2', true, 'flat')), true);
+      const rT = canvasTex(128, 32, (g) => { g.fillStyle = '#e8c21e'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#c0161c'; g.font = 'bold 13px sans-serif'; g.fillText('横浜家系ラーメン', 6, 14); g.font = 'bold 15px sans-serif'; g.fillText('黄金家', 40, 30); });
+      const sg = mesh(new THREE.PlaneGeometry(8.4, 2.1), lam({ map: rT }), 9.5, 2.75, 15.98, false, tg); sg.rotation.y = Math.PI;
+      const nr = mesh(new THREE.PlaneGeometry(5, 1.4), lam({ color: 0x2b2b2b }), 9.5, 0.75, 15.97, false, tg); nr.rotation.y = Math.PI;   // noren
+    }
+    trow(14.5, SUE.u - SUE.w / 2 - 0.5, 15.8, 29, 8, 20); trow(SUE.u + SUE.w / 2 + 0.5, U1, 15.8, 29, 8, 22);
+    trow(U0, SUE.u - SUE.w / 2 - 0.5, -40, -25.2, 10, 24); trow(SUE.u + SUE.w / 2 + 0.5, U1, -40, -25.2, 10, 24);
+    tbox(U1 + 3, 0, 0, 5, 18, 80, faceMats(5, 80, 18, aptTex('#cdbba1', false, 'flat'), aptTex('#cdbba1', true, 'flat')), true);   // end of the map
+    for (let u = U0 + 10; u < U1; u += 16) if (Math.abs(u - SUE.u) > 6) streetLamp(...W(u, 15.6), 0, -1);
+    // walls of the turned stretch, and the edges of the whole downstream area
+    const inTurn = (u: number, v: number) => u > -10 && u < U1 && v > -25 && v < 15.7;
+    G.blockers.push((wx: number, wz: number) => {
+      const x = wx - YO.x, z = wz - YO.z;
+      if (x < 92 && z > -117) return false;                       // the old map: boxes as before
+      const dx = x - P.x, dz = z - P.z, u = dx * ca - dz * sa, v = dx * sa + dz * ca;
+      if (x <= OTA.x + OTA.w / 2 - 0.5) return z > -28 || z < -117; // straight part: the block between the two bridges
+      if (!inTurn(u, v)) return true;
+      if (u < U0) return false;                                     // the 太田橋 end
+      const onBridge = Math.abs(u - SUE.u) < SUE.w / 2 - 0.25;
+      if (Math.abs(v) < 6.1 && !onBridge) return true;              // the river (and its railings)
+      if (Math.abs(v) < 6.4 && Math.abs(Math.abs(u - SUE.u) - SUE.w / 2) < 0.3) return true;   // bridge parapets
+      const ru = Math.abs(u - 9.5) < 4.7 && Math.abs(v - 19.5) < 3.7;   // the ramen shop
+      return ru;
+    });
+  }
   // street lamps follow the alley's lamp level (evening / night)
   const prevLamps = G.applyLamps;
   G.applyLamps = (lv: number) => { prevLamps && prevLamps(lv); for (const h of lampHeads) h.material = lv > 0 ? lampOn : lampOff; };
