@@ -54,6 +54,12 @@ export function Panel() {
           <button aria-pressed={ui.showTask} onClick={() => G.setView({ showTask: !ui.showTask })}>할 일</button>
           <button aria-pressed={ui.showTalk} onClick={() => G.setView({ showTalk: !ui.showTalk })}>혼잣말·안내</button>
         </div>
+        <h3 className="sub">달리기 속도 (Shift)</h3>
+        <div className="row" role="group" aria-label="달리기 속도">
+          {['느리게', '보통', '빠르게', '아주 빠르게'].map((l, i) => (
+            <button key={l} aria-pressed={ui.runIdx === i} onClick={() => G.setView({ runIdx: i })}>{l}</button>
+          ))}
+        </div>
         <h3 className="sub">Q·E 회전 속도</h3>
         <div className="row" role="group" aria-label="Q·E 화면 회전 속도">
           {['느리게', '보통', '빠르게', '아주 빠르게'].map((l, i) => (
