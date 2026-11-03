@@ -573,28 +573,67 @@ export function setupYokohama(G: Game) {
     const trainT = canvasTex(64, 16, (g) => { g.fillStyle = '#c4272d'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#efe9df'; g.fillRect(0, 9, 64, 2); g.fillStyle = '#2d3640'; for (let x = 3; x < 64; x += 8) g.fillRect(x, 2, 6, 5); });
     const tr = lam({ color: 0xc4272d }), trTop = lam({ color: 0xb7b2a8 }), trSide = lam({ map: trainT });
     for (let i = 0; i < 2; i++) box(ST0 + 1.5 + 9.2 + i * 18.6, 7.6, vz - 1.6, 18.4, 3, 2.8, [tr, tr, trTop, trTop, trSide, trSide], true);
-    const SB0 = 90, SB1 = 110, sbc = (SB0 + SB1) / 2;
-    box(sbc, 0, vz, SB1 - SB0, 5.6, 6.4, lam({ color: 0xe4e0d6 }), true); col(sbc, vz, SB1 - SB0, 6.4);
-    mesh(new THREE.PlaneGeometry(8, 2.6), glassDark, sbc, 1.3, vz + 3.22);
+    // the station is on the viaduct: at street level there is only the entrance hall at the east end (by
+    // 藤棚浦舟通り) on the north half, so the south half under the tracks stays open to walk through
+    const SB0 = 103, SB1 = 115.5, sbc = (SB0 + SB1) / 2, hz = vz - 1.6;
+    box(sbc, 0, hz, SB1 - SB0, 5.6, 3.2, lam({ color: 0xe4e0d6 }), true); col(sbc, hz, SB1 - SB0, 3.2);
+    mesh(new THREE.PlaneGeometry(8, 2.6), glassDark, sbc, 1.3, hz + 1.62);
     const gateT = canvasTex(64, 16, (g) => { g.fillStyle = '#20252b'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#7fd0ff'; for (let x = 4; x < 64; x += 12) g.fillRect(x, 6, 6, 3); });
-    mesh(new THREE.PlaneGeometry(7.6, 1.0), lam({ map: gateT }), sbc, 0.5, vz + 3.25);
+    mesh(new THREE.PlaneGeometry(7.6, 1.0), lam({ map: gateT }), sbc, 0.5, hz + 1.65);
     const sT = canvasTex(256, 48, (g) => {
       g.fillStyle = '#1f3c6e'; g.fillRect(0, 0, 256, 48); g.fillStyle = '#d7262e'; g.fillRect(0, 40, 256, 8);
       g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.fillText('黄金町', 14, 30); g.font = 'bold 15px sans-serif'; g.fillText('Koganecho Sta.', 120, 22); g.font = '11px sans-serif'; g.fillText('京急線', 120, 36);
     });
     mesh(new THREE.PlaneGeometry(9.6, 1.8), lam({ map: sT }), sbc, 4.4, vz + 3.24);
-    SEATS.push({ zone: 'alley', at: [YO.x + sbc, YO.z + vz + 4.4], r: 2.2, label: '黄金町駅 개찰구',
+    SEATS.push({ zone: 'alley', at: [YO.x + sbc, YO.z + hz + 3.2], r: 2.0, label: '黄金町駅 개찰구',
       act: () => toast('黄金町駅. 다음은 히노데초, 그다음은 사쿠라기초.') } as Spot);
     // under the tracks on either side of the station building: small galleries (Koganecho Bazaar)
-    [['GALLERY', '#efe6d2', 84], ['café 黄金', '#d9c3a0', 114.5]].forEach(([nm, c, x]) => {
-      const xx = x as number;
-      box(xx, 0, vz, 5.4, 3.4, 5, lam({ color: new THREE.Color(c as string).getHex() }), true); col(xx, vz, 5.4, 5);
-      mesh(new THREE.PlaneGeometry(3.2, 2.2), glassDark, xx - 0.6, 1.2, vz + 2.52);
+    [['GALLERY', '#efe6d2', 85], ['STUDIO', '#5a6a58', 91.5], ['café 黄金', '#d9c3a0', 98]].forEach(([nm, c, x]) => {
+      const xx = x as number, gz = vz - 1.6;
+      box(xx, 0, gz, 5.4, 3.4, 3.2, lam({ color: new THREE.Color(c as string).getHex() }), true); col(xx, gz, 5.4, 3.2);
+      mesh(new THREE.PlaneGeometry(3.2, 2.2), glassDark, xx - 0.6, 1.2, gz + 1.62);
       const t = canvasTex(64, 16, (g) => { g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, 64, 16); g.fillStyle = '#222'; g.font = 'bold 10px sans-serif'; g.textAlign = 'center'; g.fillText(nm as string, 32, 11); });
-      mesh(new THREE.PlaneGeometry(2.8, 0.7), lam({ map: t }), xx, 2.95, vz + 2.53);
+      mesh(new THREE.PlaneGeometry(2.8, 0.7), lam({ map: t }), xx, 2.95, gz + 1.63);
     });
-    // north of the tracks (the 1丁目 blocks below route 218)
-    fillBlock(81.5, OTA.x - OTA.w / 2 - 0.5, vz - 18, vz - 4, 10, 24);
+    // north of the tracks: the 1丁目 blocks (a lane between them leads from under the station up to 218)
+    fillBlock(81.5, 99.5, vz - 18, vz - 4, 10, 22); fillBlock(103.5, OTA.x - OTA.w / 2 - 0.5, vz - 18, vz - 4, 10, 22);
+    flat(101.5, vz - 11, 4, 14, lam({ map: rep(paveT, 2, 8) }), 0.004);
+    // route 218, east-west north of the blocks, with crossroads at 栄橋 street and 藤棚浦舟通り
+    const R218 = -122;
+    road((-92 + 150) / 2, R218, 242, 8);
+    for (const z of [R218 - 4.7, R218 + 4.7]) pave((-92 + 150) / 2, z, 242, 1.4);
+    line((-92 + 150) / 2, R218, 242, 0.12, yellow);
+    for (const x of [75, OTA.x]) {
+      const w = x === 75 ? 12 : OTA.w;
+      crosswalk(x - w / 2 - 2, R218, 'x', 7.4); crosswalk(x + w / 2 + 2, R218, 'x', 7.4);
+      crosswalk(x, R218 + 5.6, 'z', w - 0.6); crosswalk(x, R218 - 5.6, 'z', w - 0.6);
+      // traffic lights on the four corners
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const px = x + sx * (w / 2 + 0.6), pz = R218 + sz * 4.6;
+        mesh(new THREE.CylinderGeometry(0.07, 0.09, 4.2, 6), poleMat, px, 2.1, pz); col(px, pz, 0.2, 0.2);
+        const hd = box(px - sx * 0.9, 3.6, pz, 1.4, 0.42, 0.32, lam({ color: 0x3a3d40 }));
+        for (let k = 0; k < 3; k++) mesh(new THREE.CircleGeometry(0.11, 10), new THREE.MeshBasicMaterial({ color: [0x3cd27a, 0xf2c230, 0xe2483a][k] }), px - sx * 0.9 + (k - 1) * 0.4, 3.81, pz - sz * 0.17).rotation.y = sz > 0 ? Math.PI : 0;
+        void hd;
+      }
+    }
+    // the blocks north of 218 (the edge of the map), with two shops from the map on the corners
+    fillBlock(-90, 68.5, R218 - 18, R218 - 5, 8, 22); fillBlock(81.5, 105, R218 - 18, R218 - 5, 8, 22);
+    function shopFront(x: number, w: number, name: string, sub: string, bg: string, fg: string) {
+      const z = R218 - 8.5;
+      box(x, 0, z, w, 6.5, 7, faceMats(w, 7, 6.5, aptTex('#d8cbb4', false, 'flat'), aptTex('#d8cbb4', true, 'flat')), true); col(x, z, w, 7);
+      const t = canvasTex(128, 32, (g) => { g.fillStyle = bg; g.fillRect(0, 0, 128, 32); g.fillStyle = fg; g.font = '10px sans-serif'; g.fillText(sub, 6, 12); g.font = 'bold 16px serif'; g.fillText(name, 6, 29); });
+      mesh(new THREE.PlaneGeometry(w - 1, 1.5), lam({ map: t }), x, 2.9, z + 3.52);
+      mesh(new THREE.PlaneGeometry(w * 0.5, 2.0), glassDark, x - w * 0.15, 1.0, z + 3.52);
+      mesh(new THREE.PlaneGeometry(1.6, 1.2), lam({ color: 0x2a2a2a }), x + w * 0.25, 1.4, z + 3.53);   // noren
+    }
+    shopFront(110, 8.6, 'かつら', '豚骨清湯・自家製麺', '#f4efe2', '#2b2b2b');
+    shopFront(62, 8, '松林', '食堂', '#3b4a3b', '#f3efe2');
+    // bus stops on 藤棚浦舟通り (by the tracks and south of the river)
+    for (const [x, z] of [[OTA.x + OTA.w / 2 + 1, vz + 1], [OTA.x - OTA.w / 2 - 1, -45]] as [number, number][]) {
+      mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 6), poleMat, x, 1.1, z); col(x, z, 0.2, 0.2);
+      const bT = canvasTex(32, 32, (g) => { g.fillStyle = '#2f7d4f'; g.beginPath(); g.arc(16, 16, 15, 0, 7); g.fill(); g.fillStyle = '#fff'; g.font = 'bold 9px sans-serif'; g.textAlign = 'center'; g.fillText('バス', 16, 19); });
+      const bs = mesh(new THREE.CircleGeometry(0.32, 14), lam({ map: bT, side: THREE.DoubleSide }), x, 2.3, z); bs.rotation.y = Math.PI / 2;
+    }
 
     // ===== past 太田橋: everything turned to run north-east =====
     const ANG = 32 * Math.PI / 180, ca = Math.cos(ANG), sa = Math.sin(ANG);
@@ -660,16 +699,17 @@ export function setupYokohama(G: Game) {
       const nr = mesh(new THREE.PlaneGeometry(5, 1.4), lam({ color: 0x2b2b2b }), 9.5, 0.75, 15.97, false, tg); nr.rotation.y = Math.PI;   // noren
     }
     trow(14.5, SUE.u - SUE.w / 2 - 0.5, 15.8, 29, 8, 20); trow(SUE.u + SUE.w / 2 + 0.5, U1, 15.8, 29, 8, 22);
-    trow(U0, SUE.u - SUE.w / 2 - 0.5, -40, -25.2, 10, 24); trow(SUE.u + SUE.w / 2 + 0.5, U1, -40, -25.2, 10, 24);
+    trow(U0, 16, -40, -25.2, 10, 24); trow(46, SUE.u - SUE.w / 2 - 0.5, -40, -25.2, 10, 24); trow(SUE.u + SUE.w / 2 + 0.5, U1, -40, -25.2, 10, 24);
     tbox(U1 + 3, 0, 0, 5, 18, 80, faceMats(5, 80, 18, aptTex('#cdbba1', false, 'flat'), aptTex('#cdbba1', true, 'flat')), true);   // end of the map
     for (let u = U0 + 10; u < U1; u += 16) if (Math.abs(u - SUE.u) > 6) streetLamp(...W(u, 15.6), 0, -1);
     // walls of the turned stretch, and the edges of the whole downstream area
     const inTurn = (u: number, v: number) => u > -10 && u < U1 && v > -25 && v < 15.7;
     G.blockers.push((wx: number, wz: number) => {
       const x = wx - YO.x, z = wz - YO.z;
-      if (x < 92 && z > -117) return false;                       // the old map: boxes as before
+      if (x < 92 && z > -127) return false;                       // the old map: boxes as before
       const dx = x - P.x, dz = z - P.z, u = dx * ca - dz * sa, v = dx * sa + dz * ca;
-      if (x <= OTA.x + OTA.w / 2 - 0.5) return z > -28 || z < -117; // straight part: the block between the two bridges
+      if (x <= OTA.x + OTA.w / 2 - 0.5) return z > -28 || z < -127; // straight part: the block between the two bridges
+      if (x < 150 && z > -126.5 && z < -117.5) return false;        // route 218 heading east
       if (!inTurn(u, v)) return true;
       if (u < U0) return false;                                     // the 太田橋 end
       const onBridge = Math.abs(u - SUE.u) < SUE.w / 2 - 0.25;
