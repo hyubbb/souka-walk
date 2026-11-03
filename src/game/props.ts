@@ -348,6 +348,16 @@ const HOUSE_DEFAULTS: [string, string, number, number, number, Partial<SpawnOpts
   // balcony
   ['화분(베란다)', 'pottedPlant', -1.8, 2.2, 0, { s: 2.6 }],
   ['화분(베란다) 2', 'pottedPlant', -1.8, 13.4, 0, { s: 2.3 }],
+  // Yokohama apartment (house-local x 200..205.5, see house.ts): the 洋室 at the south end
+  ['침대(요코하마)', 'bedSingle', 201.0, 9.3, 0],
+  ['책상(요코하마)', 'desk', 204.95, 10.4, -Math.PI / 2],
+  ['의자(요코하마)', 'chairDesk', 204.1, 10.4, Math.PI / 2],
+  ['러그(요코하마)', 'rugRectangle', 202.9, 11.3, 0],
+  ['TV 장(요코하마)', 'cabinetTelevision', 202.9, 8.15, 0],
+  ['TV(요코하마)', 'televisionModern', 202.9, 8.15, 0],
+  ['스탠드(요코하마)', 'lampRoundFloor', 200.45, 12.5, 0],
+  ['화분(요코하마)', 'pottedPlant', 205.05, 12.55, 0],
+  ['화분(요코하마 베란다)', 'pottedPlant', 200.5, 14.3, 0, { s: 2.4 }],
 ];
 
 export function setupProps(G: Game) {

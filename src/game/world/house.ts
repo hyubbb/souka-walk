@@ -232,10 +232,93 @@ export function buildHouse(G: Game) {
     { n:'BALCONY 베란다',      r:[-2.4,0,0,14.5] },
   ];
 
+
+  // ================= YOKOHAMA APARTMENT (STUDIO Z, 1K) =================
+  // From the floor plan, about 1.9× real size so souka can walk around. House-local x = AX + ax, z = az;
+  // north (the front door) is z = 0, the balcony is at the south end. Bath and toilet are swapped from the plan:
+  // the bath is top-left, the toilet bottom-left, and both open only from the washroom between them
+  // (standing at the basin: toilet door on the left, bath door on the right).
+  const AX = 200, AW = 5.5, AL = 13.0;
+  const A = (x: number) => AX + x;
+  const aptFloor = canvasTex(32, 32, (g, w, h) => speckle(g, w, h, '#d9c7a6', 0.06, 0.3));
+  floor(A(0), 0, A(2.4), 7.8, tex.tileW, 1);        // bath · washroom · toilet
+  floor(A(2.4), 1.0, A(AW), 5.6, aptFloor, 2);       // kitchen
+  floor(A(2.4), 0, A(3.9), 1.0, tex.tile, 1.5, 0.004); // entrance (one step down)
+  floor(A(4.3), 0, A(AW), 1.0, aptFloor, 2);
+  floor(A(2.4), 5.6, A(3.9), 7.8, tex.wood);         // hall into the room
+  floor(A(0), 7.8, A(AW), AL, tex.wood);             // western room 洋室
+  floor(A(0), AL, A(AW), AL + 1.8, tex.concrete);    // balcony
+  { const e = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.08), M.furn); e.position.set(A(3.15), 0.03, 1.0); house.add(e); }
+  {
+    const og = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), lam({ map: canvasTex(32, 32, (g, w, h) => speckle(g, w, h, '#7a776f', 0.25, 0.7), [24, 24]) }));
+    og.rotation.x = -Math.PI / 2; og.position.set(A(2.75), -0.02, 7); house.add(og);
+    const sl = new THREE.Mesh(new THREE.BoxGeometry(AW + 0.6, 0.3, AL + 2.2), M.cap); sl.position.set(A(2.75), -0.15, (AL + 1.8) / 2); house.add(sl);
+  }
+  // outer walls
+  wall(A(0), 0, A(AW), 0, [{ a: 2.6, b: 3.7, t: 'front' }]);
+  wall(A(0), 0, A(0), AL, [{ a: 0.8, b: 1.8, t: 'window' }, { a: 9.2, b: 11.6, t: 'window' }]);
+  wall(A(AW), 0, A(AW), AL, [{ a: 8.8, b: 11.4, t: 'window' }]);
+  wall(A(0), AL, A(AW), AL, [{ a: 0.5, b: 5.0, t: 'slide' }]);
+  // bath / washroom / toilet column: only the washroom has a door to the kitchen
+  wall(A(2.4), 0, A(2.4), 7.8, [{ a: 3.3, b: 4.4, t: 'door', swing: 1 }]);
+  wall(A(0), 2.6, A(2.4), 2.6, [{ a: 1.15, b: 2.2, t: 'door', swing: -1 }]);   // washroom → bath (right of the basin)
+  wall(A(0), 5.2, A(2.4), 5.2, [{ a: 1.15, b: 2.2, t: 'door', swing: 1 }]);    // washroom → toilet (left of the basin)
+  wall(A(0), 7.8, A(2.4), 7.8);
+  // kitchen → room
+  wall(A(2.4), 5.6, A(AW), 5.6, [{ a: 0.15, b: 1.4, t: 'door', swing: 1 }]);
+  // balcony railing
+  for (let x = 0.15; x <= AW - 0.1; x += 0.55) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.0, 0.05), railMat); p.position.set(A(x), 0.5, AL + 1.75); house.add(p); }
+  hbox(AW, 0.08, 0.08, railMat, A(AW / 2), 1.0, AL + 1.75, { col: false }); addColL(A(AW / 2), AL + 1.75, AW, 0.2);
+
+  // bath: tub along the north wall, shower on the west wall
+  const bathWhite = new THREE.MeshPhongMaterial({ color: 0xf1f1ee, shininess: 40, specular: 0x333333 });
+  hbox(2.15, 0.6, 1.0, bathWhite, A(1.2), 0, 0.65);
+  { const w = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.78), lam({ color: 0x9cc8d8 })); w.rotation.x = -Math.PI / 2; w.position.set(A(1.2), 0.52, 0.65); house.add(w); }
+  hbox(0.06, 0.7, 0.06, M.metal, A(0.15), 1.3, 1.8, { col: false });
+  { const head = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.06, 0.05, 10), M.metal); head.position.set(A(0.25), 2.05, 1.8); head.rotation.z = 1.2; house.add(head); }
+  // washroom: basin + mirror on the west wall, washing machine below it
+  hbox(0.6, 0.85, 1.0, withFront(M.white, lam({ color: 0xd8d6cf }), '+x', lam({ map: tex.sink })), A(0.4), 0, 3.3);
+  wallDecor(canvasTex(16, 16, (g) => { g.fillStyle = '#c9d6dc'; g.fillRect(0, 0, 16, 16); g.fillStyle = '#e8f0f2'; g.fillRect(2, 2, 5, 12); }), 0.8, 0.9, A(0.11), 1.55, 3.3, Math.PI / 2);
+  hbox(0.75, 0.85, 0.75, withFront(M.white, lam({ map: tex.washer }), '+x'), A(0.48), 0, 4.45);
+  // toilet: against the west wall, facing east
+  {
+    const tg = new THREE.Group(); tg.position.set(A(0.55), 0, 6.5); house.add(tg);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.4, 14), bathWhite); base.position.set(0.15, 0.2, 0); tg.add(base);
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.12, 16), bathWhite); bowl.scale.set(1.25, 1, 1); bowl.position.set(0.2, 0.46, 0); tg.add(bowl);
+    const seat = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.04, 6, 16), lam({ color: 0xe8e4da })); seat.rotation.x = Math.PI / 2; seat.scale.set(1.2, 1, 1); seat.position.set(0.2, 0.53, 0); tg.add(seat);
+    const tank = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.45, 0.55), bathWhite); tank.position.set(-0.17, 0.75, 0); tg.add(tank);
+    addColL(A(0.6), 6.5, 0.8, 0.6);
+    const paper = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.12, 10), M.white); paper.rotation.x = Math.PI / 2; paper.position.set(A(0.6), 0.75, 7.62); house.add(paper);
+  }
+  // kitchen: shoe cabinet by the door, stove + sink counter on the east wall, fridge
+  hbox(1.15, 1.0, 0.45, withFront(M.furn, lam({ map: tex.shoes }), '+z'), A(4.85), 0, 0.33);
+  hbox(0.65, 0.9, 1.0, withFront(M.white, lam({ map: tex.counter }), '-x', lam({ map: tex.stove })), A(5.12), 0, 1.75);
+  hbox(0.65, 0.9, 1.4, withFront(M.white, lam({ map: tex.counter }), '-x', lam({ map: tex.sink })), A(5.12), 0, 2.95);
+  hbox(0.7, 0.35, 2.4, M.white, A(5.15), 1.75, 2.35, { col: false });   // wall cupboard
+  hbox(0.75, 1.75, 0.8, withFront(M.white, lam({ map: tex.fridge }), '-x'), A(5.1), 0, 4.55);
+  // closet (CL) between the kitchen and the room, doors facing the hall
+  hbox(1.6, 2.4, 2.2, withFront(M.white, lam({ map: tex.door }), '-x'), A(4.7), 0, 6.7);
+  wallDecor(poster(2), 0.5, 0.62, A(AW - 0.11), 1.6, 12.0, -Math.PI / 2);
+  // what you see from the windows and the balcony
+  for (const [x, z, w, d, h] of [[-8, 4, 6, 8, 9], [-9, 16, 7, 6, 12], [12, 3, 6, 8, 8], [12, 15, 7, 7, 14], [2, 26, 12, 6, 10], [3, -9, 10, 6, 7]]) addBuilding(HX + A(x), z, w, d, h);
+  const APT_ROOMS = [
+    { n: '요코하마 집 · 욕실', r: [A(0), A(2.4), 0, 2.6] }, { n: '요코하마 집 · 세면실', r: [A(0), A(2.4), 2.6, 5.2] },
+    { n: '요코하마 집 · 화장실', r: [A(0), A(2.4), 5.2, 7.8] }, { n: '요코하마 집 · 현관', r: [A(2.4), A(3.9), 0, 1.0] },
+    { n: '요코하마 집 · 부엌', r: [A(2.4), A(AW), 0, 5.6] }, { n: '요코하마 집 · 방', r: [A(0), A(AW), 5.6, AL] },
+    { n: '요코하마 집 · 베란다', r: [A(0), A(AW), AL, AL + 1.8] },
+  ];
+  ROOMS.push(...APT_ROOMS);
+  /** Walkable box of whichever home souka is in (house-local x is added to HX by the caller). */
+  const houseBox = () => G.S.home === 'yoko'
+    ? { x0: HX + A(0.25), x1: HX + A(AW - 0.25), z0: 0.25, z1: AL + 1.6 }
+    : { x0: HX - 2.2, x1: HX + 14.8, z0: 0.2, z1: 14.3 };
+  /** Where you stand just inside the apartment's front door. */
+  const aptDoorIn = { x: HX + A(3.15), z: 1.5 };
+
   // door into the house from the alley (back wall)
   const alleyDoor = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.0), lam({ map:tex.frontDoor }));
   alleyDoor.position.set(0, 1.0, 13.99); alleyDoor.rotation.y = Math.PI; scene.add(alleyDoor);
   const alleyStep = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 0.5), lam({ color:0x9a968e })); alleyStep.position.set(0, 0.06, 13.75); scene.add(alleyStep);
 
-  Object.assign(G, { house, M, tex, wallGroups, holdables, ROOMS });
+  Object.assign(G, { house, M, tex, wallGroups, holdables, ROOMS, houseBox, aptDoorIn, APT_X: AX });
 }
