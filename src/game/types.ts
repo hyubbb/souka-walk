@@ -48,7 +48,9 @@ export interface Seat { y: number; rot: number; pose: Pose; exit?: [number, numb
   /** where souka sits, when it is not the spot you press C at */
   pos?: [number, number];
   /** a playground swing: the seat rocks around the top beam */
-  swing?: SwingState }
+  swing?: SwingState;
+  /** camera angle to use when taking this spot (karaoke mics) */
+  camYaw?: number }
 
 export interface Spot {
   zone: Zone;

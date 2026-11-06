@@ -94,9 +94,10 @@ export function Panel() {
             <button onClick={() => G.edit.toggle()}>편집·창고 (B)</button>
           </div>
           <div className="row">
-            {(S.area !== 'alley' || S.zone !== 'alley') && <button onClick={() => G.goZone('alley')}>골목으로</button>}
-            {(S.area !== 'yokohama' || S.zone !== 'alley') && <button onClick={() => G.yokohama.go()}>요코하마로</button>}
-            {G.city?.enabled && (S.area !== 'city' || S.zone !== 'alley') && <button onClick={() => G.city.go('city')}>타케시바로</button>}
+            {(S.area !== 'alley' || S.zone !== 'alley') && <button onClick={() => { G.setUi({ menuOpen: false }); G.goZone('alley') }}>골목으로</button>}
+            {(S.area !== 'yokohama' || S.zone !== 'alley') && <button onClick={() => { G.setUi({ menuOpen: false }); G.yokohama.go() }}>요코하마로</button>}
+            {G.city?.enabled && (S.area !== 'city' || S.zone !== 'alley') && <button onClick={() => { G.setUi({ menuOpen: false }); G.city.go('city') }}>타케시바로</button>}
+            {(S.zone !== 'house' || S.home !== 'karaoke') && <button onClick={() => { G.setUi({ menuOpen: false }); G.goZone('house', 'karaoke') }}>노래방으로</button>}
           </div>
         </section>
       )}

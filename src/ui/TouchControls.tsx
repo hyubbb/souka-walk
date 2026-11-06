@@ -63,7 +63,7 @@ export function TouchControls() {
         <div className="tknob" style={{ transform: `translate(${knob[0]}px, ${knob[1]}px)` }} />
       </div>
       <div className="tbtns">
-        {S.pose === 'sing' && !S.photo && <>{hold('♪ 부르기', ' ')}{btn('다음 줄', 'enter')}</>}
+        {S.pose === 'sing' && !S.photo && <>{btn('이전 줄', 'h')}{hold('♪ 부르기', 'j')}{btn('다음 줄', 'k')}</>}
         {S.photo ? btn('찰칵', ' ', 'big')
           : S.reels ? <>{btn(S.reelCam === 'front' ? '자유 시점' : '정면 고정', 'f')}{btn(S.recording ? '■ 정지' : '● 녹화', 'v', 'big')}</>
           : S.editMode ? null
