@@ -763,6 +763,8 @@ export function setupYokohama(G: Game) {
     // walls of the turned stretch, and the edges of the whole downstream area
     const inTurn = (u: number, v: number) => u > -10 && u < U1 && v > -25 && v < 15.7;
     G.blockers.push((wx: number, wz: number) => {
+      // only out in Yokohama: everywhere else (the house, the alley, Takeshiba) this shape test must not apply
+      if (G.S.zone !== 'alley' || G.S.area !== 'yokohama') return false;
       const x = wx - YO.x, z = wz - YO.z;
       if (x < 92 && z > -127) return false;                       // the old map: boxes as before
       const dx = x - P.x, dz = z - P.z, u = dx * ca - dz * sa, v = dx * sa + dz * ca;
