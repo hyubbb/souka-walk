@@ -571,7 +571,21 @@ export function setupYokohama(G: Game) {
     crosswalk(OTA.x, RZ1 + 3.4, 'z', OTA.w - 0.6); crosswalk(OTA.x, RZ0 - 6.6, 'z', OTA.w - 0.6);
     // --- south bank, 栄橋 street → 藤棚浦舟通り: the Isesakicho-side blocks
     road((92 + R0) / 2, IZ, R0 - 92, 6);
-    fillBlock(81.5, R0 - 0.5, RZ1 + 4.6, IZ - 3.4, 8, 20);
+    fillBlock(81.5, 105.5, RZ1 + 4.6, IZ - 3.4, 8, 20);
+    // カラオケ: a karaoke building facing 藤棚浦舟通り, with a tall neon sign; its door leads to the karaoke box
+    {
+      const kx = 110.25, kz = (RZ1 + 4.6 + IZ - 3.4) / 2, kw = 8.3, kd = (IZ - 3.4) - (RZ1 + 4.6);
+      box(kx, 0, kz, kw, 14, kd, faceMats(kw, kd, 14, aptTex('#4a3f63', false, 'office'), aptTex('#4a3f63', true, 'office')), true); col(kx, kz, kw, kd);
+      const kT = canvasTex(32, 128, (g) => { g.fillStyle = '#1b1530'; g.fillRect(0, 0, 32, 128); g.fillStyle = '#ff4fa3'; g.font = 'bold 22px sans-serif'; g.textAlign = 'center'; ['カ', 'ラ', 'オ', 'ケ'].forEach((c, i) => g.fillText(c, 16, 26 + i * 28)); g.strokeStyle = '#3fd0ff'; g.lineWidth = 2; g.strokeRect(2, 2, 28, 124); });
+      const ks = mesh(new THREE.BoxGeometry(0.3, 6.4, 1.6), [new THREE.MeshBasicMaterial({ map: kT }), new THREE.MeshBasicMaterial({ map: kT }), black, black, new THREE.MeshBasicMaterial({ map: kT }), new THREE.MeshBasicMaterial({ map: kT })], kx + kw / 2 + 0.3, 7.5, kz + kd / 2 - 1.6);
+      ks.rotation.y = Math.PI / 2;
+      const eT = canvasTex(128, 32, (g) => { g.fillStyle = '#ff4fa3'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#fff'; g.font = 'bold 16px sans-serif'; g.fillText('KARAOKE ♪', 18, 22); });
+      mesh(new THREE.PlaneGeometry(4.6, 1.1), new THREE.MeshBasicMaterial({ map: eT }), kx + kw / 2 + 0.02, 3.2, kz + 2, false).rotation.y = Math.PI / 2;
+      mesh(new THREE.PlaneGeometry(2.2, 2.4), glassDark, kx + kw / 2 + 0.02, 1.2, kz + 2).rotation.y = Math.PI / 2;
+      const doorAt: [number, number] = [YO.x + kx + kw / 2 + 0.9, YO.z + kz + 2];
+      SEATS.push({ zone: 'alley', at: doorAt, r: 1.3, label: '노래방 들어가기', act: () => G.goZone('house', 'karaoke') } as Spot);
+      G.KARAOKE_OUT = { x: doorAt[0] + 1.2, z: doorAt[1], rot: Math.PI / 2, yaw: -Math.PI / 2 + 0.4, msg: '黄金町의 밤. 노래 한 곡 하고 나왔다.' };
+    }
     fillBlock(81.5, R0 - 0.5, IZ + 3.4, -28.5, 8, 18);
     // --- Keikyu viaduct + 黄金町 station (between 栄橋 and 藤棚浦舟通り, north of the river)
     const viaduct = lam({ color: 0xb4afa4 });
@@ -784,7 +798,8 @@ export function setupYokohama(G: Game) {
   G.applyLamps = (lv: number) => { prevLamps && prevLamps(lv); for (const h of lampHeads) h.material = lv > 0 ? lampOn : lampOff; };
 
   // ---------- getting here and home ----------
-  function go() {
+  /** Out into Yokohama: by default at the home's front door; `at` puts souka somewhere else (the karaoke box). */
+  function go(at?: { x: number; z: number; rot: number; yaw: number; msg?: string }) {
     if (S.riding) { toast('차에서 내린 다음에 가자.'); return; }
     G.setUi({ fading: true });
     setTimeout(() => {
@@ -792,9 +807,10 @@ export function setupYokohama(G: Game) {
       for (const g of G.wallGroups) g.visible = true;
       // out of the front door, facing the road (north); the camera looks back at the house from the road
       char.position.set(YO.x + DOOR.x, 0, YO.z + DOOR.z - 1.4); char.rotation.y = Math.PI; S.camYaw = Math.PI + 0.35; S.camDist = 7; S.walkPitch.alley = 0.3;
+      if (at) { char.position.set(at.x, 0, at.z); char.rotation.y = at.rot; S.camYaw = at.yaw; }
       G.applyTime(S.timeIdx);
       G.setUi({ fading: false });
-      toast('요시노초. 오늘은 공원 지나 오오카강까지 걸어 볼까.');
+      toast(at?.msg || '요시노초. 오늘은 공원 지나 오오카강까지 걸어 볼까.');
     }, 280);
   }
   G.SPOTS.push({ zone: 'alley', at: [YO.x + DOOR.x, YO.z + DOOR.z - 0.6], r: 1.3, label: '집에 들어가기', act: () => G.goZone('house', 'yoko') } as Spot);

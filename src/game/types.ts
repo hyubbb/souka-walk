@@ -3,7 +3,7 @@ import type * as THREE from 'three';
 export type Zone = 'house' | 'alley';
 /** Outdoors: the alley, or Takeshiba through the ticket gate (same zone, different place). */
 export type Area = 'alley' | 'city' | 'yokohama';
-export type Pose = 'stand' | 'think' | 'sit' | 'lie' | 'ride' | 'drive' | 'hug' | 'money' | 'count' | 'peek';
+export type Pose = 'stand' | 'think' | 'sit' | 'lie' | 'ride' | 'drive' | 'hug' | 'money' | 'count' | 'peek' | 'sing';
 export type SubStyle = 'dialog' | 'movie';
 export type Frame = 'wide' | 'close';
 
@@ -75,8 +75,12 @@ export interface State {
   photo: boolean;
   reels: boolean;
   /** which home the indoor zone is: the main house (alley) or the Yokohama apartment */
-  home: 'main' | 'yoko';
+  home: 'main' | 'yoko' | 'karaoke';
   jumpY: number;
+  /** karaoke: the sing key is held (mouth moves, lyrics wipe) */
+  singing?: boolean;
+  /** a mouth shape forced for a moment (singing) on top of the chosen one */
+  mouthOverride?: string | null;
   /** camera yaw the WASD directions are taken from (held while a direction key is down) */
   moveYaw?: number;
   jumpV: number;

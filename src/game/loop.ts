@@ -103,6 +103,7 @@ export function setupLoop(G: Game) {
     const sp = (S.pose === 'stand' && !S.riding) ? G.nearestSpot() : null;
     if (S.riding) prompt = `${Math.round(Math.abs(S.riding.speed) * 6)}km/h · C 내리기 · L 라이트 ${S.riding.lights ? 'ON' : 'OFF'}`;
     else if (S.held) prompt = 'C : ' + S.held.name + ' 내려놓기 · Z/X 거리';
+    else if (S.pose === 'sing') prompt = 'Space 누르는 동안 : 부르기 · Enter : 다음 줄 · Backspace : 이전 줄 · C : 그만';
     else if (S.seat?.swing) prompt = 'W : 굴리기 · S : 멈추기 · C : 내리기';
     else if (S.seat || S.pose === 'sit' || S.pose === 'hug' || S.pose === 'count' || S.pose === 'lie') prompt = 'C : ' + (S.seat && S.seat.pose === 'stand' ? '내려오기' : '일어나기');
     else if (sp) prompt = 'C : ' + sp.label;
@@ -197,6 +198,7 @@ export function setupLoop(G: Game) {
       hud();
     }
 
+    G.karaoke?.update(dt);
     G.applyPose(dt);
     if (S.jumpY) G.body.position.y += S.jumpY / (S.size || 1);
     const bs = 1 - Math.min(0.5, (S.jumpY || 0) * 0.6); G.blob.scale.set(bs, bs, bs);

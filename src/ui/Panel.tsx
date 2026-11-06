@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from 'react';
+import { KaraokeBox } from './KaraokeBox';
 import { useGame } from './useGame';
 import { ACC, EXPR, MOUTHS, POSES } from '../game/character';
 import { TIMES } from '../game/lighting';
@@ -42,6 +43,8 @@ export function Panel() {
         <h1>souka 출근길</h1>
         <p className="sub">PROTOTYPE 0.9 · 집 → 골목 → 편의점<br />A QUIET WALK TO WORK</p>
       </div>
+
+      <KaraokeBox />
 
       <section className="box">
         <h2>화면</h2>

@@ -25,6 +25,8 @@ export function setupInput(G: Game) {
     if (!S.photo && S.held && k === 'z') S.reach = Math.max(0.45, S.reach - 0.15);
     if (!S.photo && S.held && k === 'x') S.reach = Math.min(1.6, S.reach + 0.15);
     if (!S.photo && k === 'c') G.interact();
+    if (S.pose === 'sing' && k === 'enter') G.karaoke.next();
+    if (S.pose === 'sing' && k === 'backspace') { e.preventDefault(); G.karaoke.prev(); }
     if (!S.photo && k === 'l' && S.riding) { G.setLights(S.riding, !S.riding.lights); G.toast(S.riding.lights ? '라이트 ON' : '라이트 OFF'); }
     if (S.photo) {
       if (k >= '1' && k <= String(EXPR.length)) G.setExpr(EXPR[+k - 1].key);

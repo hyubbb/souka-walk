@@ -308,10 +308,55 @@ export function buildHouse(G: Game) {
     { n: '요코하마 집 · 베란다', r: [A(0), A(AW), AL, AL + 1.8] },
   ];
   ROOMS.push(...APT_ROOMS);
+
+  // ================= KARAOKE BOX (カラオケ, near Koganecho) =================
+  // A small private room: big lyric screen on the south wall, sofa around a low table, neon strips,
+  // a mirror ball. Souka stands at the mic spot facing the screen; karaoke.ts draws the screen.
+  const KX = 300, KW = 6, KL = 7.5;
+  const K = (x: number) => KX + x;
+  const carpet = canvasTex(32, 32, (g) => { g.fillStyle = '#2b2346'; g.fillRect(0, 0, 32, 32); const cs = ['#e2488c', '#3fc6e8', '#f2c230']; for (let i = 0; i < 26; i++) { g.fillStyle = cs[i % 3]; g.fillRect((i * 37) % 31, (i * 53) % 31, 2, 2); } });
+  floor(K(0), 0, K(KW), KL, carpet, 1.5);
+  {
+    const og = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), lam({ color: 0x3a3a40 })); og.rotation.x = -Math.PI / 2; og.position.set(K(3), -0.02, 4); house.add(og);
+  }
+  wall(K(0), 0, K(KW), 0, [{ a: 0.6, b: 1.6, t: 'front' }]);
+  wall(K(0), 0, K(0), KL); wall(K(KW), 0, K(KW), KL); wall(K(0), KL, K(KW), KL);
+  // dark padded wall panels and neon strips
+  const pad = canvasTex(16, 16, (g) => { g.fillStyle = '#3a2f5c'; g.fillRect(0, 0, 16, 16); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 7, 16, 1); g.fillRect(7, 0, 1, 16); });
+  pad.wrapS = pad.wrapT = THREE.RepeatWrapping;
+  const padMat = (w: number) => { const t = pad.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 0.8, 2.6); return lam({ map: t }); };
+  for (const [x, z, w, ry] of [[K(KW / 2), 0.11, KW, 0], [K(0.11), KL / 2, KL, Math.PI / 2], [K(KW - 0.11), KL / 2, KL, -Math.PI / 2], [K(KW / 2), KL - 0.11, KW, Math.PI]] as [number, number, number, number][]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.1, WH - 0.02), padMat(w)); m.position.set(x, (WH - 0.02) / 2, z); m.rotation.y = ry; house.add(m);
+    const n = new THREE.Mesh(new THREE.BoxGeometry(w - 0.3, 0.05, 0.05), new THREE.MeshBasicMaterial({ color: ry === 0 || ry === Math.PI ? 0xff4fa3 : 0x3fd0ff }));
+    n.position.set(x, WH - 0.12, z); n.rotation.y = ry; house.add(n);
+  }
+  // the screen (karaoke.ts gives it the lyric texture), its frame, the machine and two speakers
+  hbox(3.7, 2.2, 0.12, M.black, K(KW / 2), 0.65, KL - 0.18, { col: false });
+  const kScreen = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.97), new THREE.MeshBasicMaterial({ color: 0x111122 }));
+  kScreen.position.set(K(KW / 2), 1.75, KL - 0.25); kScreen.rotation.y = Math.PI; house.add(kScreen);
+  hbox(1.3, 0.55, 0.5, withFront(M.black, new THREE.MeshBasicMaterial({ color: 0x2a6cff }), '-z'), K(KW / 2), 0, KL - 0.45);
+  for (const sx of [-1, 1]) hbox(0.55, 1.2, 0.45, M.black, K(KW / 2 + sx * 2.35), 0, KL - 0.4);
+  // sofa: red vinyl along the west wall and the north wall, a low table in front
+  const vinyl = new THREE.MeshPhongMaterial({ color: 0xb8233f, shininess: 60, specular: 0x444444 });
+  hbox(0.85, 0.42, 5.2, vinyl, K(0.55), 0, 4.0); hbox(0.25, 0.85, 5.2, vinyl, K(0.2), 0, 4.0, { col: false });
+  hbox(3.0, 0.42, 0.85, vinyl, K(3.4), 0, 0.75); hbox(3.0, 0.85, 0.25, vinyl, K(3.4), 0, 0.35, { col: false });
+  hbox(1.6, 0.45, 2.4, lam({ color: 0x1c1c22 }), K(2.2), 0, 3.6);
+  { // tambourine and two glasses on the table
+    const tb = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 16), lam({ color: 0xe8c21e })); tb.rotation.x = Math.PI / 2; tb.position.set(K(2.0), 0.48, 3.0); house.add(tb);
+    for (const z of [3.9, 4.2]) { const gl = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.14, 8), new THREE.MeshPhongMaterial({ color: 0xffd36b, transparent: true, opacity: 0.8 })); gl.position.set(K(2.5), 0.52, z); house.add(gl); }
+  }
+  // mirror ball
+  const mirrorBall = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), new THREE.MeshPhongMaterial({ color: 0xdddddd, shininess: 100, specular: 0xffffff, flatShading: true }));
+  mirrorBall.position.set(K(3.2), 2.55, 3.8); house.add(mirrorBall);
+  ROOMS.push({ n: '노래방', r: [K(0), K(KW), 0, KL] });
+  // which indoor place souka is in (S.home): the alley house, the Yokohama flat, or the karaoke box
+  const homes: Record<string, { box: { x0: number; x1: number; z0: number; z1: number }; door: { x: number; z: number; rot: number; yaw: number } }> = {
+    main: { box: { x0: HX - 2.2, x1: HX + 14.8, z0: 0.2, z1: 14.3 }, door: { x: HX + 0, z: 13.4, rot: Math.PI, yaw: 0.75 } },
+    yoko: { box: { x0: HX + A(0.25), x1: HX + A(AW - 0.25), z0: 0.25, z1: AL + 1.6 }, door: { x: HX + A(3.15), z: 1.5, rot: 0, yaw: Math.PI + 0.55 } },
+    karaoke: { box: { x0: HX + K(0.25), x1: HX + K(KW - 0.25), z0: 0.25, z1: KL - 0.6 }, door: { x: HX + K(1.1), z: 1.4, rot: 0, yaw: Math.PI - 0.6 } },
+  };
   /** Walkable box of whichever home souka is in (house-local x is added to HX by the caller). */
-  const houseBox = () => G.S.home === 'yoko'
-    ? { x0: HX + A(0.25), x1: HX + A(AW - 0.25), z0: 0.25, z1: AL + 1.6 }
-    : { x0: HX - 2.2, x1: HX + 14.8, z0: 0.2, z1: 14.3 };
+  const houseBox = () => (homes[G.S.home] || homes.main).box;
   /** Where you stand just inside the apartment's front door. */
   const aptDoorIn = { x: HX + A(3.15), z: 1.5 };
 
@@ -320,5 +365,5 @@ export function buildHouse(G: Game) {
   alleyDoor.position.set(0, 1.0, 13.99); alleyDoor.rotation.y = Math.PI; scene.add(alleyDoor);
   const alleyStep = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 0.5), lam({ color:0x9a968e })); alleyStep.position.set(0, 0.06, 13.75); scene.add(alleyStep);
 
-  Object.assign(G, { house, M, tex, wallGroups, holdables, ROOMS, houseBox, aptDoorIn, APT_X: AX });
+  Object.assign(G, { house, M, tex, wallGroups, holdables, ROOMS, houseBox, aptDoorIn, APT_X: AX, homes, kScreen, mirrorBall, KARAOKE_X: KX });
 }

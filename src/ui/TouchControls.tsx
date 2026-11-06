@@ -47,6 +47,12 @@ export function TouchControls() {
     <button key={key + label} className={'tbtn ' + cls} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); press(key); }}>{label}</button>
   );
 
+  const hold = (label: string, key: string) => (
+    <button key={'hold' + key} className="tbtn big"
+      onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); G.keys[key] = true; }}
+      onPointerUp={() => { G.keys[key] = false; }} onPointerCancel={() => { G.keys[key] = false; }}>{label}</button>
+  );
+
   return (
     <div className="touch">
       <div
@@ -57,6 +63,7 @@ export function TouchControls() {
         <div className="tknob" style={{ transform: `translate(${knob[0]}px, ${knob[1]}px)` }} />
       </div>
       <div className="tbtns">
+        {S.pose === 'sing' && !S.photo && <>{hold('♪ 부르기', ' ')}{btn('다음 줄', 'enter')}</>}
         {S.photo ? btn('찰칵', ' ', 'big')
           : S.reels ? <>{btn(S.reelCam === 'front' ? '자유 시점' : '정면 고정', 'f')}{btn(S.recording ? '■ 정지' : '● 녹화', 'v', 'big')}</>
           : S.editMode ? null
@@ -64,7 +71,7 @@ export function TouchControls() {
               {S.held && btn('가까이', 'z')}
               {S.held && btn('멀리', 'x')}
               {S.riding && btn(S.riding.lights ? '라이트 끄기' : '라이트', 'l')}
-              {!S.riding && btn('점프', ' ')}
+              {!S.riding && S.pose !== 'sing' && btn('점프', ' ')}
               {btn(S.riding ? '내리기' : '행동', 'c', 'big')}
             </>}
       </div>
