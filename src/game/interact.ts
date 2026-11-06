@@ -14,6 +14,10 @@ export function setupInteract(G: Game) {
     { zone: 'alley', at: [0, 13.1], label: '집에 들어가기', act: () => goZone('house') },
     { zone: 'house', at: L(13.2, 13.7), label: '출근하기', act: () => goZone('alley') },
     { zone: 'house', at: L(203.15, 0.55), r: 1.1, label: '밖으로 나가기', act: () => G.yokohama?.go() },
+    { zone: 'house', at: L(301.1, 0.55), r: 1.0, label: '노래방에서 나가기', act: () => G.yokohama?.go(G.KARAOKE_OUT) },
+    { zone: 'house', at: L(304.6, 5.0), r: 1.1, label: '마이크 잡고 노래하기', seat: { y: 0, rot: -0.62, pose: 'sing', pos: L(304.6, 5.0) } },
+    { zone: 'house', at: L(301.2, 2.6), r: 0.8, label: '소파에 앉기', seat: { y: 0.42, rot: Math.PI / 2, pose: 'sit', pos: L(300.55, 2.6) } },
+    { zone: 'house', at: L(301.2, 5.2), r: 0.8, label: '소파에 앉기', seat: { y: 0.42, rot: Math.PI / 2, pose: 'sit', pos: L(300.55, 5.2) } },
     { zone: 'house', obj: '체중계', at: L(10.0, 12.85), r: 0.8, label: '체중계에 올라가기', seat: { y: 0.09, rot: Math.PI, pose: 'stand', msg: '……3.2kg' } },
   ];
   // spots follow their furniture when it is moved in edit mode: store them relative to the object
@@ -147,6 +151,7 @@ export function setupInteract(G: Game) {
       const at = sp.seat.pos || sp.at;
       char.position.set(at[0], 0, at[1]); char.rotation.y = sp.seat.rot; G.setPose(sp.seat.pose);
       if (sp.seat.swing) { sp.seat.swing.ang = 0; sp.seat.swing.vel = 0; }
+      if (sp.seat.pose === 'sing') { S.camYaw = 2.15; S.camDist = 4.2; S.walkPitch.house = 0.14; }   // from the side: souka and the screen
       if (sp.seat.msg) setTimeout(() => toast(sp.seat.msg), 500);
       return;
     }
@@ -154,14 +159,16 @@ export function setupInteract(G: Game) {
   }
 
   /** Walk out of the front door / back in, with a short fade. */
-  function goZone(z: 'house' | 'alley', home: 'main' | 'yoko' = 'main') {
+  function goZone(z: 'house' | 'alley', home: 'main' | 'yoko' | 'karaoke' = 'main') {
     G.setUi({ fading: true });
     setTimeout(() => {
       S.zone = z; S.seat = null; S.seatY = 0; G.setPose('stand');
       if (z === 'house') S.home = home;
-      if (z === 'house' && home === 'yoko') {
-        // the Yokohama apartment: just inside the front door, facing into the flat (south)
-        char.position.set(G.aptDoorIn.x, 0, G.aptDoorIn.z); char.rotation.y = 0; S.camYaw = Math.PI + 0.55; S.camDist = 6.4;
+      if (z === 'house' && home !== 'main') {
+        // the Yokohama flat or the karaoke box: just inside the front door
+        const d = G.homes[home].door;
+        char.position.set(d.x, 0, d.z); char.rotation.y = d.rot; S.camYaw = d.yaw; S.camDist = 6.4;
+        if (home === 'karaoke') setTimeout(() => toast('노래방. 마이크 앞에서 C, 가사는 메뉴에서 입력해요.'), 400);
         for (const g of G.wallGroups) g.visible = true;
         G.applyTime(S.timeIdx); G.setUi({ fading: false });
         return;

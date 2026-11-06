@@ -81,11 +81,13 @@ export function buildCharacter(G: Game) {
   const mouthTexes: Record<string, THREE.Texture> = {
     line: mouthTex,
     cat: canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.strokeStyle='#121212'; g.lineWidth=1.3; g.lineCap='round'; g.beginPath(); g.moveTo(2.5,2.5); g.quadraticCurveTo(5,7,8,3.6); g.quadraticCurveTo(11,7,13.5,2.5); g.stroke(); }),
+    sing: canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.fillStyle='#121212'; g.beginPath(); g.ellipse(8,4,2.6,3.2,0,0,7); g.fill(); g.fillStyle='#d9506a'; g.beginPath(); g.ellipse(8,5.6,1.5,1.1,0,0,7); g.fill(); }),
     o: canvasTex(64, 32, (g) => { g.scale(4, 4); g.clearRect(0,0,16,8); g.strokeStyle='#121212'; g.lineWidth=1.2; g.beginPath(); g.ellipse(8,4,1.9,2.4,0,0,7); g.stroke(); }),
   };
   const blushTex = canvasTex(32, 32, (g) => { const gr = g.createRadialGradient(16,16,2,16,16,15); gr.addColorStop(0,'rgba(255,135,150,.8)'); gr.addColorStop(1,'rgba(255,135,150,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(16,16,15,11,0,0,7); g.fill(); });
   function drawFace() {
-    const key = `${S.expr || 'default'}|${S.mouth || 'line'}|${S.acc.blush ? 1 : 0}`;
+    const mouth = S.mouthOverride || S.mouth || 'line';
+    const key = `${S.expr || 'default'}|${mouth}|${S.acc.blush ? 1 : 0}`;
     let tex = faces.get(key);
     if (!tex) {
       const c = document.createElement('canvas'); c.width = FW; c.height = FH; fg = c.getContext('2d')!;
@@ -101,8 +103,9 @@ export function buildCharacter(G: Game) {
     const e = S.expr || 'default';
     paint(eyeTexL[e].image, -0.19, -0.06, 0.36, 0.215, 0.215);   // smaller, lower (viewer's left)
     paint(eyeTexR[e].image, 0.215, -0.005, 0.36, 0.27, 0.27);     // big, out towards the right edge
-    const sc = S.mouth === 'cat' ? 1.45 : 1;
-    paint(mouthTexes[S.mouth || 'line'].image, -0.015, -0.155, 0.36, 0.07 * sc, 0.035 * sc);
+    const mouth = S.mouthOverride || S.mouth || 'line';
+    const sc = mouth === 'cat' ? 1.45 : mouth === 'sing' ? 2.1 : 1;
+    paint(mouthTexes[mouth].image, -0.015, -0.155, 0.36, 0.07 * sc, 0.035 * sc);
   }
   function setMouth(k) { S.mouth = k; drawFace(); G.notify(); }
   const hat = new THREE.Group();
@@ -161,6 +164,10 @@ export function buildCharacter(G: Game) {
   for (const [x, z, r, n] of [[-0.3, 0.42, 0.4, 2], [0.28, 0.48, -0.3, 3], [0.05, 0.62, 0.9, 1], [-0.12, 0.32, -0.6, 1]] as [number, number, number, number][]) {
     const b = bundle(n); b.position.set(x, 0.0, z); b.rotation.y = r; floorMoney.add(b);
   }
+  // karaoke mic (right hand, pose 'sing')
+  const mic = new THREE.Group(); mic.visible = false; armR.add(mic); mic.position.set(0, -0.35, 0); mic.rotation.x = Math.PI / 2 + 0.3;
+  { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.016, 0.16, 8), new THREE.MeshPhongMaterial({ color: 0x1d1d22 })); h.position.y = 0.04; mic.add(h);
+    const hd = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), new THREE.MeshPhongMaterial({ color: 0xb9bcc2, shininess: 80 })); hd.position.y = 0.14; mic.add(hd); }
   const countMoney = bundle(2); countMoney.visible = false; armR.add(countMoney); countMoney.position.set(0, -0.27, 0.02); countMoney.rotation.x = Math.PI / 2;
 
   // blob shadow
@@ -194,6 +201,10 @@ export function buildCharacter(G: Game) {
     const { pose, walkPhase, speedNow } = S;
     const seatY = S.seatY / (char.scale.x || 1);
     handMoney.visible = pose === 'money'; floorMoney.visible = countMoney.visible = pose === 'count';
+    mic.visible = pose === 'sing';
+    // singing: the mouth opens and closes with the words (overrides the chosen mouth while singing)
+    const wantMouth = pose === 'sing' && S.singing ? (Math.sin(performance.now() / 1000 * 13) > -0.3 ? 'sing' : 'o') : null;
+    if (wantMouth !== (S.mouthOverride || null)) { S.mouthOverride = wantMouth; drawFace(); }
     const t = performance.now() / 1000;
     if (pose === 'stand') {
       const walk = Math.min(1, speedNow / 2);
@@ -247,6 +258,12 @@ export function buildCharacter(G: Game) {
       legL.rotation.x = legR.rotation.x = -1.45;
       armL.rotation.set(-1.15, 0, -0.12); armR.rotation.set(-1.15, 0, 0.12);
       headGroup.rotation.x = 0.04; headGroup.rotation.z = Math.sin(S.walkPhase * 0.3) * 0.03;
+    } else if (pose === 'sing') {    // mic up to the mouth, the other hand keeping time, looking up at the screen
+      const on = S.singing ? 1 : 0.3;
+      armR.rotation.set(-1.5, 0, -0.5); armL.rotation.set(-0.35 + Math.sin(t * 4) * 0.25 * on, 0, -0.55);
+      body.rotation.z = Math.sin(t * 2.2) * 0.06 * on; body.position.y = 0.035 + Math.abs(Math.sin(t * 4.4)) * 0.02 * on;
+      headGroup.rotation.x = -0.14; headGroup.rotation.z = Math.sin(t * 2.2 + 0.6) * 0.07 * on;
+      legL.rotation.x = Math.sin(t * 2.2) * 0.08 * on;
     } else if (pose === 'lie') {
       body.rotation.x = Math.PI / 2 - 0.05; body.position.set(0, 0.19 + seatY, -0.6);
       armL.rotation.set(0, 0, -0.25); armR.rotation.set(0, 0, 0.25);
