@@ -77,6 +77,8 @@ export interface State {
   /** which home the indoor zone is: the main house (alley) or the Yokohama apartment */
   home: 'main' | 'yoko';
   jumpY: number;
+  /** camera yaw the WASD directions are taken from (held while a direction key is down) */
+  moveYaw?: number;
   jumpV: number;
   /** reels camera: front = stays in front of souka, free = drag it anywhere and walk like normal */
   reelCam: 'front' | 'free';
