@@ -201,7 +201,7 @@ export function buildCharacter(G: Game) {
     const { pose, walkPhase, speedNow } = S;
     const seatY = S.seatY / (char.scale.x || 1);
     handMoney.visible = pose === 'money'; floorMoney.visible = countMoney.visible = pose === 'count';
-    mic.visible = pose === 'sing';
+    mic.visible = pose === 'sing' && S.seatY < 0.1;   // on a stage the stand's mic is used
     // singing: the mouth opens and closes with the words (overrides the chosen mouth while singing)
     const wantMouth = pose === 'sing' && S.singing ? (Math.sin(performance.now() / 1000 * 13) > -0.3 ? 'sing' : 'o') : null;
     if (wantMouth !== (S.mouthOverride || null)) { S.mouthOverride = wantMouth; drawFace(); }
@@ -261,7 +261,7 @@ export function buildCharacter(G: Game) {
     } else if (pose === 'sing') {    // mic up to the mouth, the other hand keeping time, looking up at the screen
       const on = S.singing ? 1 : 0.3;
       armR.rotation.set(-1.5, 0, -0.5); armL.rotation.set(-0.35 + Math.sin(t * 4) * 0.25 * on, 0, -0.55);
-      body.rotation.z = Math.sin(t * 2.2) * 0.06 * on; body.position.y = 0.035 + Math.abs(Math.sin(t * 4.4)) * 0.02 * on;
+      body.rotation.z = Math.sin(t * 2.2) * 0.06 * on; body.position.y = 0.035 + seatY + Math.abs(Math.sin(t * 4.4)) * 0.02 * on;
       headGroup.rotation.x = -0.14; headGroup.rotation.z = Math.sin(t * 2.2 + 0.6) * 0.07 * on;
       legL.rotation.x = Math.sin(t * 2.2) * 0.08 * on;
     } else if (pose === 'lie') {

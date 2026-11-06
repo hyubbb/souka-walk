@@ -310,50 +310,155 @@ export function buildHouse(G: Game) {
   ROOMS.push(...APT_ROOMS);
 
   // ================= KARAOKE BOX (カラオケ, near Koganecho) =================
-  // A small private room: big lyric screen on the south wall, sofa around a low table, neon strips,
-  // a mirror ball. Souka stands at the mic spot facing the screen; karaoke.ts draws the screen.
-  const KX = 300, KW = 6, KL = 7.5;
+  // A corridor along the front and three rooms off it, all with a high closed ceiling (it hides itself when
+  // the camera rises above it): 1 = the usual karaoke room (screen, sofa, mirror ball), 2 = a band stage with
+  // drums, guitar, bass and amps, 3 = a bare stage. Every room has a mic spot and a lyric screen; karaoke.ts
+  // draws the same lyrics on all of them.
+  const KX = 300, KW = 21, KL = 10, CZ = 2.4, CH = 4.2;
   const K = (x: number) => KX + x;
   const carpet = canvasTex(32, 32, (g) => { g.fillStyle = '#2b2346'; g.fillRect(0, 0, 32, 32); const cs = ['#e2488c', '#3fc6e8', '#f2c230']; for (let i = 0; i < 26; i++) { g.fillStyle = cs[i % 3]; g.fillRect((i * 37) % 31, (i * 53) % 31, 2, 2); } });
-  floor(K(0), 0, K(KW), KL, carpet, 1.5);
-  {
-    const og = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), lam({ color: 0x3a3a40 })); og.rotation.x = -Math.PI / 2; og.position.set(K(3), -0.02, 4); house.add(og);
-  }
-  wall(K(0), 0, K(KW), 0, [{ a: 0.6, b: 1.6, t: 'front' }]);
-  wall(K(0), 0, K(0), KL); wall(K(KW), 0, K(KW), KL); wall(K(0), KL, K(KW), KL);
-  // dark padded wall panels and neon strips
+  floor(K(0), CZ, K(KW), KL, carpet, 1.5);
+  floor(K(0), 0, K(KW), CZ, canvasTex(16, 16, (g) => { g.fillStyle = '#1d1a26'; g.fillRect(0, 0, 16, 16); g.fillStyle = '#2a2636'; g.fillRect(0, 0, 8, 8); g.fillRect(8, 8, 8, 8); }), 1.2);
+  { const og = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), lam({ color: 0x3a3a40 })); og.rotation.x = -Math.PI / 2; og.position.set(K(KW / 2), -0.02, 5); house.add(og); }
   const pad = canvasTex(16, 16, (g) => { g.fillStyle = '#3a2f5c'; g.fillRect(0, 0, 16, 16); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 7, 16, 1); g.fillRect(7, 0, 1, 16); });
-  pad.wrapS = pad.wrapT = THREE.RepeatWrapping;
-  const padMat = (w: number) => { const t = pad.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 0.8, 2.6); return lam({ map: t }); };
-  for (const [x, z, w, ry] of [[K(KW / 2), 0.11, KW, 0], [K(0.11), KL / 2, KL, Math.PI / 2], [K(KW - 0.11), KL / 2, KL, -Math.PI / 2], [K(KW / 2), KL - 0.11, KW, Math.PI]] as [number, number, number, number][]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.1, WH - 0.02), padMat(w)); m.position.set(x, (WH - 0.02) / 2, z); m.rotation.y = ry; house.add(m);
-    const n = new THREE.Mesh(new THREE.BoxGeometry(w - 0.3, 0.05, 0.05), new THREE.MeshBasicMaterial({ color: ry === 0 || ry === Math.PI ? 0xff4fa3 : 0x3fd0ff }));
-    n.position.set(x, WH - 0.12, z); n.rotation.y = ry; house.add(n);
+  const padM = (len: number) => { const t = pad.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(len / 0.8, CH / 0.8); return lam({ map: t }); };
+  /** A tall padded wall with door openings [a, b] (distances from the start); hides like the house walls. */
+  function kwall(x1: number, z1: number, x2: number, z2: number, gaps: [number, number][] = []) {
+    const horiz = Math.abs(z1 - z2) < 1e-6, len = horiz ? x2 - x1 : z2 - z1;
+    const g = new THREE.Group(); house.add(g); wallGroups.push(g);
+    const seg = (a: number, b: number, y0: number, y1: number) => {
+      if (b - a < 0.01) return;
+      const m = new THREE.Mesh(horiz ? new THREE.BoxGeometry(b - a, y1 - y0, 0.2) : new THREE.BoxGeometry(0.2, y1 - y0, b - a), padM(b - a));
+      const c = (a + b) / 2; m.position.set(horiz ? x1 + c : x1, (y0 + y1) / 2, horiz ? z1 : z1 + c); g.add(m);
+      if (y0 < 0.01) addColL(horiz ? x1 + c : x1, horiz ? z1 : z1 + c, horiz ? b - a : 0.2, horiz ? 0.2 : b - a);
+    };
+    let a = 0;
+    for (const [ga, gb] of [...gaps].sort((p, q) => p[0] - q[0])) { seg(a, ga, 0, CH); seg(ga, gb, 2.3, CH); a = gb; }
+    seg(a, len, 0, CH);
+    // neon strip near the top
+    const n = new THREE.Mesh(horiz ? new THREE.BoxGeometry(len, 0.05, 0.24) : new THREE.BoxGeometry(0.24, 0.05, len), new THREE.MeshBasicMaterial({ color: horiz ? 0xff4fa3 : 0x3fd0ff }));
+    n.position.set(horiz ? x1 + len / 2 : x1, CH - 0.25, horiz ? z1 : z1 + len / 2); g.add(n);
+    return g;
   }
-  // the screen (karaoke.ts gives it the lyric texture), its frame, the machine and two speakers
-  hbox(3.7, 2.2, 0.12, M.black, K(KW / 2), 0.65, KL - 0.18, { col: false });
-  const kScreen = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.97), new THREE.MeshBasicMaterial({ color: 0x111122 }));
-  kScreen.position.set(K(KW / 2), 1.75, KL - 0.25); kScreen.rotation.y = Math.PI; house.add(kScreen);
-  hbox(1.3, 0.55, 0.5, withFront(M.black, new THREE.MeshBasicMaterial({ color: 0x2a6cff }), '-z'), K(KW / 2), 0, KL - 0.45);
-  for (const sx of [-1, 1]) hbox(0.55, 1.2, 0.45, M.black, K(KW / 2 + sx * 2.35), 0, KL - 0.4);
-  // sofa: red vinyl along the west wall and the north wall, a low table in front
+  kwall(K(0), 0, K(KW), 0, [[0.6, 1.8]]);
+  kwall(K(0), 0, K(0), KL); kwall(K(KW), 0, K(KW), KL); kwall(K(0), KL, K(KW), KL);
+  kwall(K(0), CZ, K(KW), CZ, [[5.6, 6.7], [7.4, 8.5], [14.4, 15.5]]);
+  kwall(K(7), CZ, K(7), KL); kwall(K(14), CZ, K(14), KL);
+  // the front door (dark glass with a sign) and room numbers over the doors
+  { const d = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.3, 0.06), lam({ color: 0x1b2230 })); d.position.set(K(1.2), 1.15, -0.05); house.add(d); }
+  [['1', 6.15], ['2', 7.95], ['3', 14.95]].forEach(([n, x]) => {
+    const t = canvasTex(32, 16, (g) => { g.fillStyle = '#111'; g.fillRect(0, 0, 32, 16); g.fillStyle = '#ffe14d'; g.font = 'bold 12px sans-serif'; g.textAlign = 'center'; g.fillText(`ROOM ${n}`, 16, 12); });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.45), new THREE.MeshBasicMaterial({ map: t })); m.position.set(K(x as number), 2.65, CZ - 0.11); m.rotation.y = Math.PI; house.add(m);
+  });
+  // ceilings: one per room and the corridor, hidden whenever the camera is above them
+  const kCeilings: THREE.Mesh[] = [];
+  for (const [x0, x1, z0, z1] of [[0, KW, 0, CZ], [0, 7, CZ, KL], [7, 14, CZ, KL], [14, KW, CZ, KL]]) {
+    const c = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), lam({ color: 0x15121f, side: THREE.DoubleSide }));
+    c.rotation.x = Math.PI / 2; c.position.set(K((x0 + x1) / 2), CH, (z0 + z1) / 2); c.userData.y = CH; house.add(c); kCeilings.push(c);
+  }
+  const kScreens: THREE.Mesh[] = [];
+  function screen(x: number, y: number, z: number, w: number, ry: number) {
+    const h = w * 0.5625;
+    const f = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, h + 0.2, 0.1), M.black); f.position.set(x, y, z); f.rotation.y = ry; house.add(f);
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x111122 }));
+    s.position.set(x + Math.sin(ry) * 0.06, y, z + Math.cos(ry) * 0.06); s.rotation.y = ry; house.add(s); kScreens.push(s);
+  }
+  const mirrorBalls: THREE.Mesh[] = [];
+  const ball = (x: number, z: number) => { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), new THREE.MeshPhongMaterial({ color: 0xdddddd, shininess: 100, specular: 0xffffff, flatShading: true })); b.position.set(x, CH - 0.7, z); house.add(b); mirrorBalls.push(b); };
+
+  // ---- ROOM 1: the usual karaoke room ----
+  screen(K(3.5), 1.8, KL - 0.16, 3.6, Math.PI);
+  hbox(1.3, 0.55, 0.5, withFront(M.black, new THREE.MeshBasicMaterial({ color: 0x2a6cff }), '-z'), K(3.5), 0, KL - 0.45);
+  for (const sx of [-1, 1]) hbox(0.55, 1.2, 0.45, M.black, K(3.5 + sx * 2.45), 0, KL - 0.4);
   const vinyl = new THREE.MeshPhongMaterial({ color: 0xb8233f, shininess: 60, specular: 0x444444 });
-  hbox(0.85, 0.42, 5.2, vinyl, K(0.55), 0, 4.0); hbox(0.25, 0.85, 5.2, vinyl, K(0.2), 0, 4.0, { col: false });
-  hbox(3.0, 0.42, 0.85, vinyl, K(3.4), 0, 0.75); hbox(3.0, 0.85, 0.25, vinyl, K(3.4), 0, 0.35, { col: false });
-  hbox(1.6, 0.45, 2.4, lam({ color: 0x1c1c22 }), K(2.2), 0, 3.6);
-  { // tambourine and two glasses on the table
-    const tb = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 16), lam({ color: 0xe8c21e })); tb.rotation.x = Math.PI / 2; tb.position.set(K(2.0), 0.48, 3.0); house.add(tb);
-    for (const z of [3.9, 4.2]) { const gl = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.14, 8), new THREE.MeshPhongMaterial({ color: 0xffd36b, transparent: true, opacity: 0.8 })); gl.position.set(K(2.5), 0.52, z); house.add(gl); }
+  hbox(0.85, 0.42, 5.4, vinyl, K(0.55), 0, 6.4); hbox(0.25, 0.85, 5.4, vinyl, K(0.2), 0, 6.4, { col: false });
+  hbox(3.2, 0.42, 0.85, vinyl, K(2.7), 0, CZ + 0.55); hbox(3.2, 0.85, 0.25, vinyl, K(2.7), 0, CZ + 0.22, { col: false });
+  hbox(1.6, 0.45, 2.4, lam({ color: 0x1c1c22 }), K(2.3), 0, 6.0);
+  { const tb = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 16), lam({ color: 0xe8c21e })); tb.rotation.x = Math.PI / 2; tb.position.set(K(2.1), 0.48, 5.4); house.add(tb);
+    for (const z of [6.3, 6.6]) { const gl = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.14, 8), new THREE.MeshPhongMaterial({ color: 0xffd36b, transparent: true, opacity: 0.8 })); gl.position.set(K(2.6), 0.52, z); house.add(gl); } }
+  ball(K(3.4), 6.2);
+
+  // ---- stages for rooms 2 and 3: raised platform at the back, screen on the front wall facing it ----
+  const STAGE_Z = 7.3, STAGE_H = 0.35;
+  const spot = lam({ color: 0x2a2a2e });
+  function stage(x0: number, x1: number) {
+    hbox(x1 - x0 - 0.2, STAGE_H, KL - STAGE_Z - 0.1, lam({ color: 0x24201c }), K((x0 + x1) / 2), 0, (STAGE_Z + KL) / 2);
+    hbox(x1 - x0 - 0.2, 0.06, 0.06, new THREE.MeshBasicMaterial({ color: 0xffd36b }), K((x0 + x1) / 2), STAGE_H - 0.06, STAGE_Z + 0.02, { col: false });
+    screen(K((x0 + x1) / 2 + 1.2), 2.6, CZ + 0.16, 3.0, 0);
+    // spotlights on a ceiling bar, with soft light cones down onto the stage
+    hbox(x1 - x0 - 1, 0.1, 0.1, M.black, K((x0 + x1) / 2), CH - 0.5, STAGE_Z - 0.4, { col: false });
+    for (const [k, col] of [[-1.8, 0xff4fa3], [0, 0xfff1c0], [1.8, 0x3fd0ff]] as [number, number][]) {
+      const lx = K((x0 + x1) / 2 + k);
+      const can = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 0.36, 10), spot); can.position.set(lx, CH - 0.68, STAGE_Z - 0.4); can.rotation.x = -0.5; house.add(can);
+      const beam = new THREE.Mesh(new THREE.ConeGeometry(0.9, CH - 1.2, 16, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }));
+      beam.position.set(lx, (CH - 0.7 + STAGE_H) / 2 + 0.2, STAGE_Z + 0.6); beam.rotation.x = -0.5; house.add(beam);
+    }
+    // a mic stand at the front of the stage
+    const ms = new THREE.Group(); ms.position.set(K((x0 + x1) / 2 - 1.0), STAGE_H, STAGE_Z + 0.5); house.add(ms);
+    const mp = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.95, 6), M.metal); mp.position.y = 0.475; ms.add(mp);
+    const mb = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.03, 12), M.black); ms.add(mb);
+    const mh = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), M.metal); mh.position.set(0, 0.98, 0.06); ms.add(mh);
+    // a few stools for the audience
+    for (const [sx, sz] of [[-2, 4.0], [0.3, 4.4], [2.3, 3.9]]) {
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.5, 10), lam({ color: 0x8a2f4a })); st.position.set(K((x0 + x1) / 2 + sx), 0.25, sz); house.add(st);
+    }
   }
-  // mirror ball
-  const mirrorBall = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), new THREE.MeshPhongMaterial({ color: 0xdddddd, shininess: 100, specular: 0xffffff, flatShading: true }));
-  mirrorBall.position.set(K(3.2), 2.55, 3.8); house.add(mirrorBall);
-  ROOMS.push({ n: '노래방', r: [K(0), K(KW), 0, KL] });
+  stage(7, 14); stage(14, KW);
+  ball(K(17.5), 5.0);
+
+  // ---- ROOM 2: the band's instruments on the stage ----
+  {
+    const chrome = new THREE.MeshPhongMaterial({ color: 0xc9ccd1, shininess: 90, specular: 0xffffff });
+    const shell = new THREE.MeshPhongMaterial({ color: 0xb3202e, shininess: 70, specular: 0x666666 });
+    const head = lam({ color: 0xf2efe6 });
+    const kit = new THREE.Group(); kit.position.set(K(10.5), STAGE_H, 9.0); kit.rotation.y = Math.PI; house.add(kit);
+    const drum = (r: number, h: number, x: number, y: number, z: number, rx = 0) => {
+      const d = new THREE.Group(); d.position.set(x, y, z); d.rotation.x = rx; kit.add(d);
+      const s = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 18, 1, true), shell); s.material.side = THREE.DoubleSide; d.add(s);
+      for (const sy of [-1, 1]) { const hd = new THREE.Mesh(new THREE.CircleGeometry(r, 18), head); hd.position.y = sy * h / 2; hd.rotation.x = -sy * Math.PI / 2; d.add(hd); }
+      return d;
+    };
+    drum(0.36, 0.34, 0, 0.37, 0, Math.PI / 2);                      // bass drum, skin to the audience
+    drum(0.18, 0.13, -0.38, 0.62, -0.32, 0.25);                     // snare
+    drum(0.14, 0.14, -0.14, 0.86, 0.02, 0.4); drum(0.15, 0.15, 0.17, 0.86, 0.02, 0.4);   // toms
+    drum(0.2, 0.3, 0.52, 0.42, -0.3);                               // floor tom
+    const stand = (x: number, z: number, h: number) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, h, 6), chrome); p.position.set(x, h / 2, z); kit.add(p); };
+    const cymbal = (x: number, y: number, z: number, r: number, tilt: number) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.95, 0.012, 20), new THREE.MeshPhongMaterial({ color: 0xd7b25a, shininess: 100, specular: 0xffffff })); c.position.set(x, y, z); c.rotation.x = tilt; kit.add(c); };
+    stand(-0.68, -0.25, 0.86); cymbal(-0.68, 0.86, -0.25, 0.17, 0); cymbal(-0.68, 0.84, -0.25, 0.17, 0);   // hi-hat
+    stand(-0.55, 0.3, 1.2); cymbal(-0.55, 1.2, 0.3, 0.24, 0.3);   // crash
+    stand(0.72, 0.25, 1.15); cymbal(0.72, 1.15, 0.25, 0.27, 0.25);  // ride
+    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 12), M.black); seat.position.set(0, 0.5, -0.65); kit.add(seat); stand(0, -0.65, 0.46);
+    // guitar and bass on stands, amps behind
+    function guitar(x: number, z: number, body: number, neckLen: number) {
+      const g = new THREE.Group(); g.position.set(K(x), STAGE_H, z); g.rotation.y = Math.PI; house.add(g);
+      const bm = new THREE.MeshPhongMaterial({ color: body, shininess: 80, specular: 0x777777 });
+      const lower = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), bm); lower.scale.set(1, 1.05, 0.22); lower.position.set(0, 0.42, 0); lower.rotation.z = 0.15; g.add(lower);
+      const upper = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), bm); upper.scale.set(1, 1, 0.22); upper.position.set(0.02, 0.66, 0); upper.rotation.z = 0.15; g.add(upper);
+      const neck = new THREE.Mesh(new THREE.BoxGeometry(0.055, neckLen, 0.03), lam({ color: 0x5a3a22 })); neck.position.set(-0.08, 0.78 + neckLen / 2, 0.01); neck.rotation.z = 0.15; g.add(neck);
+      const hd = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.03), M.black); hd.position.set(-0.08 - Math.sin(0.15) * (neckLen + 0.06), 0.78 + Math.cos(0.15) * (neckLen + 0.06), 0.01); hd.rotation.z = 0.15; g.add(hd);
+      const pg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.012), lam({ color: 0xf4f1ea })); pg.position.set(0.03, 0.47, 0.05); g.add(pg);
+      // the stand: a little A-frame behind the body
+      for (const sx of [-1, 1]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.45, 5), M.black); l.position.set(sx * 0.12, 0.2, -0.08); l.rotation.z = sx * 0.4; g.add(l); }
+    }
+    guitar(8.5, 8.3, 0xd7262e, 0.62);   // red electric guitar
+    guitar(12.6, 8.3, 0x1d1d22, 0.78);  // black bass
+    const grill = canvasTex(16, 16, (g) => { g.fillStyle = '#1a1a1a'; g.fillRect(0, 0, 16, 16); g.fillStyle = '#2c2c2c'; for (let i = 0; i < 16; i += 2) g.fillRect(0, i, 16, 1); g.fillStyle = '#d9c38a'; g.fillRect(5, 2, 6, 1); });
+    for (const [x, w, h] of [[8.0, 0.7, 0.75], [13.0, 0.75, 1.05]] as [number, number, number][])
+      hbox(w, h, 0.4, withFront(M.black, lam({ map: grill }), '-z'), K(x), STAGE_H, 9.5, { col: false });
+  }
+  // ---- ROOM 3: just the stage (a stool and a small amp) ----
+  hbox(0.6, 0.6, 0.4, withFront(M.black, lam({ color: 0x2c2c2c }), '-z'), K(19.8), STAGE_H, 9.4, { col: false });
+  { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.62, 10), M.black); st.position.set(K(16.0), STAGE_H + 0.31, 8.9); house.add(st); }
+  // the stages are solid (step up onto them only at the mic)
+  addColL(K(10.5), (STAGE_Z + KL) / 2, 6.8, KL - STAGE_Z); addColL(K(17.5), (STAGE_Z + KL) / 2, 6.8, KL - STAGE_Z);
+
+  ROOMS.push({ n: '노래방 · 복도', r: [K(0), K(KW), 0, CZ] }, { n: '노래방 · ROOM 1', r: [K(0), K(7), CZ, KL] },
+    { n: '노래방 · ROOM 2 밴드 무대', r: [K(7), K(14), CZ, KL] }, { n: '노래방 · ROOM 3 무대', r: [K(14), K(KW), CZ, KL] });
   // which indoor place souka is in (S.home): the alley house, the Yokohama flat, or the karaoke box
   const homes: Record<string, { box: { x0: number; x1: number; z0: number; z1: number }; door: { x: number; z: number; rot: number; yaw: number } }> = {
     main: { box: { x0: HX - 2.2, x1: HX + 14.8, z0: 0.2, z1: 14.3 }, door: { x: HX + 0, z: 13.4, rot: Math.PI, yaw: 0.75 } },
     yoko: { box: { x0: HX + A(0.25), x1: HX + A(AW - 0.25), z0: 0.25, z1: AL + 1.6 }, door: { x: HX + A(3.15), z: 1.5, rot: 0, yaw: Math.PI + 0.55 } },
-    karaoke: { box: { x0: HX + K(0.25), x1: HX + K(KW - 0.25), z0: 0.25, z1: KL - 0.6 }, door: { x: HX + K(1.1), z: 1.4, rot: 0, yaw: Math.PI - 0.6 } },
+    karaoke: { box: { x0: HX + K(0.25), x1: HX + K(KW - 0.25), z0: 0.25, z1: KL - 0.25 }, door: { x: HX + K(1.2), z: 1.3, rot: Math.PI / 2, yaw: -Math.PI / 2 + 0.5 } },
   };
   /** Walkable box of whichever home souka is in (house-local x is added to HX by the caller). */
   const houseBox = () => (homes[G.S.home] || homes.main).box;
@@ -365,5 +470,5 @@ export function buildHouse(G: Game) {
   alleyDoor.position.set(0, 1.0, 13.99); alleyDoor.rotation.y = Math.PI; scene.add(alleyDoor);
   const alleyStep = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 0.5), lam({ color:0x9a968e })); alleyStep.position.set(0, 0.06, 13.75); scene.add(alleyStep);
 
-  Object.assign(G, { house, M, tex, wallGroups, holdables, ROOMS, houseBox, aptDoorIn, APT_X: AX, homes, kScreen, mirrorBall, KARAOKE_X: KX });
+  Object.assign(G, { house, M, tex, wallGroups, holdables, ROOMS, houseBox, aptDoorIn, APT_X: AX, homes, kScreens, mirrorBalls, kCeilings, KARAOKE_X: KX });
 }

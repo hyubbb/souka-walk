@@ -14,10 +14,13 @@ export function setupInteract(G: Game) {
     { zone: 'alley', at: [0, 13.1], label: '집에 들어가기', act: () => goZone('house') },
     { zone: 'house', at: L(13.2, 13.7), label: '출근하기', act: () => goZone('alley') },
     { zone: 'house', at: L(203.15, 0.55), r: 1.1, label: '밖으로 나가기', act: () => G.yokohama?.go() },
-    { zone: 'house', at: L(301.1, 0.55), r: 1.0, label: '노래방에서 나가기', act: () => G.yokohama?.go(G.KARAOKE_OUT) },
-    { zone: 'house', at: L(304.6, 5.0), r: 1.1, label: '마이크 잡고 노래하기', seat: { y: 0, rot: -0.62, pose: 'sing', pos: L(304.6, 5.0) } },
-    { zone: 'house', at: L(301.2, 2.6), r: 0.8, label: '소파에 앉기', seat: { y: 0.42, rot: Math.PI / 2, pose: 'sit', pos: L(300.55, 2.6) } },
-    { zone: 'house', at: L(301.2, 5.2), r: 0.8, label: '소파에 앉기', seat: { y: 0.42, rot: Math.PI / 2, pose: 'sit', pos: L(300.55, 5.2) } },
+    { zone: 'house', at: L(301.2, 0.55), r: 1.0, label: '노래방에서 나가기', act: () => G.yokohama?.go(G.KARAOKE_OUT) },
+    // room 1: in front of the screen · rooms 2 and 3: up on the stage, facing the room (screen on the far wall)
+    { zone: 'house', at: L(305.2, 7.4), r: 1.1, label: '마이크 잡고 노래하기', seat: { y: 0, rot: -0.6, pose: 'sing', pos: L(305.2, 7.4), camYaw: 2.15 } },
+    { zone: 'house', at: L(310.5, 6.7), r: 1.1, label: '무대에 올라 노래하기', seat: { y: 0.35, rot: Math.PI, pose: 'sing', pos: L(309.5, 8.0), exit: L(310.5, 6.6), camYaw: Math.PI - 0.45 } },
+    { zone: 'house', at: L(317.5, 6.7), r: 1.1, label: '무대에 올라 노래하기', seat: { y: 0.35, rot: Math.PI, pose: 'sing', pos: L(316.5, 8.0), exit: L(317.5, 6.6), camYaw: Math.PI - 0.45 } },
+    { zone: 'house', at: L(301.2, 5.0), r: 0.8, label: '소파에 앉기', seat: { y: 0.42, rot: Math.PI / 2, pose: 'sit', pos: L(300.55, 5.0) } },
+    { zone: 'house', at: L(301.2, 7.6), r: 0.8, label: '소파에 앉기', seat: { y: 0.42, rot: Math.PI / 2, pose: 'sit', pos: L(300.55, 7.6) } },
     { zone: 'house', obj: '체중계', at: L(10.0, 12.85), r: 0.8, label: '체중계에 올라가기', seat: { y: 0.09, rot: Math.PI, pose: 'stand', msg: '……3.2kg' } },
   ];
   // spots follow their furniture when it is moved in edit mode: store them relative to the object
@@ -151,7 +154,7 @@ export function setupInteract(G: Game) {
       const at = sp.seat.pos || sp.at;
       char.position.set(at[0], 0, at[1]); char.rotation.y = sp.seat.rot; G.setPose(sp.seat.pose);
       if (sp.seat.swing) { sp.seat.swing.ang = 0; sp.seat.swing.vel = 0; }
-      if (sp.seat.pose === 'sing') { S.camYaw = 2.15; S.camDist = 4.2; S.walkPitch.house = 0.14; }   // from the side: souka and the screen
+      if (sp.seat.pose === 'sing') { S.camYaw = sp.seat.camYaw ?? 2.15; S.camDist = 4.2; S.walkPitch.house = 0.14; }   // from the side: souka and the screen
       if (sp.seat.msg) setTimeout(() => toast(sp.seat.msg), 500);
       return;
     }
