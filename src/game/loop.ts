@@ -26,6 +26,7 @@ export function setupLoop(G: Game) {
     let ix = (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0);
     let iz = (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0);
     let dx = 0, dz = 0, moving = false, faceMove = true;
+    if (!(ix || iz) || S.moveYaw === undefined) S.moveYaw = S.camYaw;
     const sw = S.seat?.swing;
     if (sw) {
       // on a swing: W pumps (pushes in the direction you are already going), S brakes; C hops off
@@ -53,7 +54,9 @@ export function setupLoop(G: Game) {
     } else if ((ix || iz) && S.pose !== 'lie') {
       moving = true;
       const len = Math.hypot(ix, iz); ix /= len; iz /= len;
-      const sin = Math.sin(S.camYaw), cos = Math.cos(S.camYaw);
+      // directions are taken from the camera when you start walking and then held, so turning the camera
+      // (mouse drag, Q/E) while walking only changes the view, not where souka is heading
+      const sin = Math.sin(S.moveYaw), cos = Math.cos(S.moveYaw);
       dx = ix * cos + iz * sin; dz = -ix * sin + iz * cos;
     }
     if (moving && (S.pose !== 'stand' || S.seat)) G.standUp();
