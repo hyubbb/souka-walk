@@ -26,6 +26,23 @@ export function setupLoop(G: Game) {
     let ix = (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0);
     let iz = (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0);
     let dx = 0, dz = 0, moving = false, faceMove = true;
+    const sw = S.seat?.swing;
+    if (sw) {
+      // on a swing: W pumps (pushes in the direction you are already going), S brakes; C hops off
+      const pump = -iz;
+      let acc = -(9.8 / sw.len) * Math.sin(sw.ang) - 0.25 * sw.vel;
+      if (pump > 0) acc += 2.6 * (sw.vel >= 0 ? 1 : -1);
+      if (pump < 0) acc -= 3 * sw.vel;
+      sw.vel += acc * dt; sw.ang += sw.vel * dt;
+      if (Math.abs(sw.ang) > 1.05) { sw.ang = Math.sign(sw.ang) * 1.05; sw.vel = 0; }
+      sw.group.rotation.x = -sw.ang;
+      const c = Math.cos(sw.ang), s = Math.sin(sw.ang);
+      // lean with the chains; the lean turns around souka's feet, so shift back to keep the seat under her
+      const lean = -sw.ang * 0.8, hip = sw.pivotY - sw.len;
+      char.rotation.x = lean;
+      char.position.set(sw.base[0], sw.len * (1 - c) + hip * (1 - Math.cos(lean)), sw.base[1] + sw.len * s - hip * Math.sin(lean));
+      ix = 0; iz = 0;
+    }
     if (S.reels && S.reelCam === 'front') {
       // reels: walk toward the camera, A/D turn; the camera backs away in front
       const turn = (keys['a'] || keys['arrowleft'] ? 1 : 0) - (keys['d'] || keys['arrowright'] ? 1 : 0);
@@ -83,6 +100,7 @@ export function setupLoop(G: Game) {
     const sp = (S.pose === 'stand' && !S.riding) ? G.nearestSpot() : null;
     if (S.riding) prompt = `${Math.round(Math.abs(S.riding.speed) * 6)}km/h · C 내리기 · L 라이트 ${S.riding.lights ? 'ON' : 'OFF'}`;
     else if (S.held) prompt = 'C : ' + S.held.name + ' 내려놓기 · Z/X 거리';
+    else if (S.seat?.swing) prompt = 'W : 굴리기 · S : 멈추기 · C : 내리기';
     else if (S.seat || S.pose === 'sit' || S.pose === 'hug' || S.pose === 'count' || S.pose === 'lie') prompt = 'C : ' + (S.seat && S.seat.pose === 'stand' ? '내려오기' : '일어나기');
     else if (sp) prompt = 'C : ' + sp.label;
     else if (S.zone === 'alley' && S.area === 'alley' && char.position.z < -49 && Math.abs(char.position.x) < 6) {
@@ -180,7 +198,7 @@ export function setupLoop(G: Game) {
     if (S.jumpY) G.body.position.y += S.jumpY / (S.size || 1);
     const bs = 1 - Math.min(0.5, (S.jumpY || 0) * 0.6); G.blob.scale.set(bs, bs, bs);
     G.sun.position.set(char.position.x - 6, char.position.y + 14, char.position.z + 8); G.sun.target.position.set(char.position.x, char.position.y, char.position.z);
-    G.blob.position.set(char.position.x, char.position.y + 0.012, char.position.z);
+    G.blob.position.set(char.position.x, (S.seat?.swing ? 0 : char.position.y) + 0.012, char.position.z);
     G.blob.visible = !(S.riding && S.riding.type === 'car');
     updateCamera(dt);
 

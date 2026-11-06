@@ -381,19 +381,36 @@ export function setupYokohama(G: Game) {
     {
       // swings: two A-frames, a yellow top beam, four seats on chains, green mats underneath
       const sx = CX0 + 11, sz = -50, L = 6.4, Hs = 3.2;
-      for (const ex of [-L / 2, L / 2]) for (const ez of [-1, 1]) {
-        const leg = mesh(new THREE.CylinderGeometry(0.07, 0.07, Hs / Math.cos(0.32), 8), blue, sx + ex, Hs / 2, sz + ez * Math.tan(0.32) * Hs / 2); leg.rotation.x = ez * 0.32;
+      // each end is an A: the two legs meet at the top beam and spread apart on the ground, with a cross brace
+      const TILT = 0.32, spread = (h: number) => Math.tan(TILT) * (Hs - h);
+      for (const ex of [-L / 2, L / 2]) {
+        for (const ez of [-1, 1]) {
+          const leg = mesh(new THREE.CylinderGeometry(0.07, 0.07, Hs / Math.cos(TILT), 8), blue, sx + ex, Hs / 2, sz + ez * spread(Hs / 2));
+          leg.rotation.x = -ez * TILT;
+          box(sx + ex, 0, sz + ez * spread(0), 0.34, 0.08, 0.34, yel);   // foot pad
+        }
+        const br = mesh(new THREE.CylinderGeometry(0.05, 0.05, spread(1.2) * 2, 6), blue, sx + ex, 1.2, sz); br.rotation.x = Math.PI / 2;
+        mesh(new THREE.SphereGeometry(0.13, 10, 8), yel, sx + ex, Hs, sz);   // joint cap
       }
       const beam = mesh(new THREE.CylinderGeometry(0.08, 0.08, L, 8), yel, sx, Hs, sz); beam.rotation.z = Math.PI / 2;
-      const chain = lam({ color: 0x3a3a3a });
+      const chain = lam({ color: 0x3a3a3a }), ring = lam({ color: 0x8a4fd0 });
+      const SEAT_Y = 0.55, ROPE = Hs - SEAT_Y;
       for (let i = 0; i < 4; i++) {
         const x = sx - L / 2 + 0.9 + i * 1.53;
-        for (const dx of [-0.18, 0.18]) mesh(new THREE.CylinderGeometry(0.012, 0.012, Hs - 0.55, 4), chain, x + dx, (Hs + 0.55) / 2, sz);
-        box(x, 0.5, sz, 0.5, 0.05, 0.22, blue);
+        // seat + chains hang from a pivot on the beam, so the whole swing can rock
+        const piv = new THREE.Group(); piv.position.set(x, Hs, sz); root.add(piv);
+        for (const dx of [-0.18, 0.18]) {
+          mesh(new THREE.CylinderGeometry(0.012, 0.012, ROPE, 4), chain, dx, -ROPE / 2, 0, false, piv);
+          const rg = mesh(new THREE.TorusGeometry(0.1, 0.03, 6, 12), ring, dx, 0, 0, false, piv); rg.rotation.y = Math.PI / 2;
+        }
+        box(0, -ROPE - 0.05, 0, 0.5, 0.05, 0.22, pipeRed, false, piv);
+        const swing = { group: piv, pivotY: Hs, len: ROPE, ang: 0, vel: 0, base: [YO.x + x, YO.z + sz] as [number, number] };
+        SEATS.push({ zone: 'alley', at: [YO.x + x, YO.z + sz + 0.9], r: 0.75, label: '그네 타기',
+          seat: { y: SEAT_Y, rot: 0, pose: 'sit', pos: [YO.x + x, YO.z + sz], exit: [YO.x + x, YO.z + sz + 1.6], swing, msg: 'W로 굴러서 앞뒤로, S로 멈추기' } } as Spot);
       }
       flat(sx - 1.6, sz, 2.6, 2.2, mat, 0.012); flat(sx + 1.6, sz, 2.6, 2.2, mat, 0.012);
-      col(sx, sz, L + 0.4, 2.4);
-      SEATS.push({ zone: 'alley', at: [YO.x + sx - L / 2 + 0.9, YO.z + sz + 0.6], r: 1.0, label: '그네 타기', seat: { y: 0.55, rot: 0, pose: 'sit', exit: [YO.x + sx - L / 2 + 0.9, YO.z + sz + 1.6] } } as Spot);
+      for (const ex of [-L / 2, L / 2]) col(sx + ex, sz, 0.4, 2.4);   // only the A-frames block; you walk in under the beam
+      col(sx, sz - 1.0, L, 0.3);
       // red pipe fences with yellow caps around the swings
       function fence(x0: number, z0: number, x1: number, z1: number) {
         const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0);

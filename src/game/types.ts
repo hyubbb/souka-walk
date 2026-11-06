@@ -43,7 +43,12 @@ export interface EditObj {
 
 export interface Holdable { obj: THREE.Object3D; name: string; hold: [number, number, number]; rx: number }
 
-export interface Seat { y: number; rot: number; pose: Pose; exit?: [number, number]; msg?: string; rl?: number; el?: [number, number]; auto?: boolean }
+export interface SwingState { group: THREE.Object3D; pivotY: number; len: number; ang: number; vel: number; base: [number, number] }
+export interface Seat { y: number; rot: number; pose: Pose; exit?: [number, number]; msg?: string; rl?: number; el?: [number, number]; auto?: boolean;
+  /** where souka sits, when it is not the spot you press C at */
+  pos?: [number, number];
+  /** a playground swing: the seat rocks around the top beam */
+  swing?: SwingState }
 
 export interface Spot {
   zone: Zone;
