@@ -59,6 +59,11 @@ export function setupInteract(G: Game) {
   /** Getting up: step off at the seat's exit, or the nearest free spot around it if a table, a wall or another
    *  piece of furniture is in the way (so souka never ends up stuck inside furniture). */
   function standUp() {
+    if (S.seat?.swing) {
+      // hop off: the swing stops, souka lands on the ground under the seat
+      const sw = S.seat.swing; sw.ang = 0; sw.vel = 0; sw.group.rotation.x = 0;
+      char.rotation.x = 0; char.position.set(sw.base[0], 0, sw.base[1]);
+    }
     if (S.seat) {
       const cx = char.position.x, cz = char.position.z;
       const want: [number, number] = S.seat.exit || [cx, cz];
@@ -139,7 +144,9 @@ export function setupInteract(G: Game) {
     if (sp && sp.act) { sp.act(); return; }
     if (sp && sp.seat) {
       S.seat = sp.seat; S.seatY = sp.seat.auto ? surfaceY(sp.at[0], sp.at[1]) : sp.seat.y;
-      char.position.set(sp.at[0], 0, sp.at[1]); char.rotation.y = sp.seat.rot; G.setPose(sp.seat.pose);
+      const at = sp.seat.pos || sp.at;
+      char.position.set(at[0], 0, at[1]); char.rotation.y = sp.seat.rot; G.setPose(sp.seat.pose);
+      if (sp.seat.swing) { sp.seat.swing.ang = 0; sp.seat.swing.vel = 0; }
       if (sp.seat.msg) setTimeout(() => toast(sp.seat.msg), 500);
       return;
     }
